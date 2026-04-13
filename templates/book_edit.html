@@ -148,12 +148,17 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" style="background:var(--bg);padding:1.25rem">
-        <div class="d-flex gap-2 mb-4">
-          <input type="text" class="form-control" id="meta-query"
-            placeholder="{{ ui.meta_title_placeholder }}" value="{{ book.title }}">
-          <input type="text" class="form-control" id="meta-author"
-            placeholder="{{ ui.meta_author_placeholder }}" value="{{ book.author or '' }}"
-            style="max-width:220px">
+        <div class="d-flex gap-2 mb-4 align-items-end">
+          <div class="flex-grow-1">
+            <label class="form-label">{{ ui.lbl_title }}</label>
+            <input type="text" class="form-control" id="meta-query"
+              placeholder="{{ ui.meta_title_placeholder }}" value="{{ book.title }}">
+          </div>
+          <div style="max-width:220px;width:100%">
+            <label class="form-label">{{ ui.lbl_author }}</label>
+            <input type="text" class="form-control" id="meta-author"
+              placeholder="{{ ui.meta_author_placeholder }}" value="{{ book.author or '' }}">
+          </div>
           <button class="btn btn-primary flex-shrink-0" onclick="searchMetadata('{{ book.id }}')">
             <i class="bi bi-search me-1"></i>{{ ui.btn_search }}
           </button>
