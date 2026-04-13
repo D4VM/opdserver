@@ -14,12 +14,30 @@ An OPDS 1.2 catalog server for serving ebooks to KOReader on jailbroken Kindles.
 
 ## Quick Start
 
+### With Docker (recommended)
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/D4VM/opdserver.git
+cd opdserver
+
+# 2. Set your LAN IP in docker-compose.yml (BASE_URL line), then:
+docker compose up --build
+```
+
+Open `http://localhost:8000` in your browser. Your library data is stored in `./data/` and survives container restarts.
+
+After code changes, rebuild with:
+```bash
+docker compose up --build
+```
+
+### Without Docker
+
 ```bash
 pip install -r requirements.txt
 python3 main.py
 ```
-
-Open `http://localhost:8000` in your browser.
 
 For KOReader, add an OPDS catalog pointing to `http://<server-ip>:8000/opds`.
 
