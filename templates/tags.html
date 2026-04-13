@@ -24,6 +24,9 @@
         <span class="flex-grow-1 tag-name-display small fw-semibold">{{ t.name }}</span>
         <input type="text" class="form-control form-control-sm flex-grow-1 d-none tag-name-input"
           value="{{ t.name }}">
+        <span class="text-subtle tag-name-display" style="font-size:.72rem;white-space:nowrap">
+          {{ t.book_count }} {{ ui.books_plural if t.book_count != 1 else ui.book_singular }}
+        </span>
         <a href="/books?tag={{ t.name }}" class="btn btn-xs btn-outline-secondary"
           title="{{ ui.btn_edit }}"><i class="bi bi-collection"></i></a>
         <button class="btn btn-xs btn-outline-secondary edit-btn" onclick="startEdit({{ t.id }})">

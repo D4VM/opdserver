@@ -17,6 +17,19 @@ templates.env.globals["ui"] = get_active()          # same dict object, mutated 
 templates.env.globals["SERVER_TITLE"] = config.SERVER_TITLE
 
 
+def _filesize(n: int | None) -> str:
+    if not n:
+        return ""
+    if n < 1024:
+        return f"{n} B"
+    if n < 1024 * 1024:
+        return f"{n / 1024:.0f} KB"
+    return f"{n / (1024 * 1024):.1f} MB"
+
+
+templates.env.filters["filesize"] = _filesize
+
+
 @router.get("/", response_class=RedirectResponse)
 async def index():
     return RedirectResponse("/books")
@@ -120,9 +133,8 @@ async def author_books_page(
             "page": page,
             "pages": pages,
             "browse_title": author,
-            "browse_subtitle": f"{total} book{'s' if total != 1 else ''}",
             "back_url": "/authors",
-            "back_label": "Authors",
+            "back_label": get_active()["nav_authors"],
             "page_url_base": f"/authors/{author_name}",
         },
     )
@@ -176,9 +188,8 @@ async def series_books_page(
             "page": page,
             "pages": pages,
             "browse_title": series,
-            "browse_subtitle": f"{total} book{'s' if total != 1 else ''}",
             "back_url": "/series",
-            "back_label": "Series",
+            "back_label": get_active()["nav_series"],
             "page_url_base": f"/series/{series_name}",
             "show_series_index": True,
         },

@@ -203,7 +203,7 @@ async def get_tags(db: aiosqlite.Connection) -> list[Tag]:
         "FROM tags t LEFT JOIN book_tags bt ON t.id = bt.tag_id "
         "GROUP BY t.id ORDER BY t.name"
     )
-    return [Tag(id=r["id"], name=r["name"]) for r in rows]
+    return [Tag(id=r["id"], name=r["name"], book_count=r["book_count"]) for r in rows]
 
 
 async def get_book_tags(db: aiosqlite.Connection, book_id: str) -> list[Tag]:

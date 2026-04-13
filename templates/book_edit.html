@@ -26,6 +26,9 @@
     </label>
     <a href="/api/download/{{ book.id }}" class="btn btn-primary btn-sm w-100" download>
       <i class="bi bi-download me-1"></i>{{ ui.btn_download }} {{ book.format | upper }}
+      {% if book.file_size %}
+      <span class="opacity-60 fw-normal" style="font-size:.75rem">· {{ book.file_size | filesize }}</span>
+      {% endif %}
     </a>
   </div>
 

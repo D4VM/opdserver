@@ -48,7 +48,8 @@ All settings are optional environment variables:
 | Variable | Default | Description |
 |---|---|---|
 | `BASE_URL` | `http://localhost:8000` | Public URL used in OPDS feed links — set to your LAN IP |
-| `SERVER_TITLE` | `My Library` | Title shown in OPDS feeds |
+| `SERVER_TITLE` | `My Library` | Title shown in UI and OPDS feeds |
+| `LOCALE_LANG` | `en` | Default UI language code (e.g. `ru`). Can be changed later in Settings. |
 | `PORT` | `8000` | Port to listen on |
 | `HOST` | `0.0.0.0` | Host to bind |
 
@@ -104,6 +105,7 @@ library.db       SQLite database (auto-created on startup)
 | `/tags` | Manage tags |
 | `/authors` | Browse by author |
 | `/series` | Browse by series |
+| `/settings` | UI settings — language switcher |
 
 REST API docs are available at `/api/docs` (FastAPI auto-generated Swagger UI).
 
@@ -130,33 +132,40 @@ class MyPlugin(MetadataPlugin):
 
 ## Localization
 
-All UI labels live in `strings.json`. To translate the interface, edit the values (not the keys):
+The UI ships with English and Russian. Switch languages from the **Settings** page (`/settings`) without restarting the server. The active language is saved to `settings.json` and persists across restarts.
+
+### Default language
+
+Set the `LOCALE_LANG` environment variable to load a language on startup:
+
+```bash
+LOCALE_LANG=ru python3 main.py
+```
+
+In `docker-compose.yml`:
+```yaml
+environment:
+  - LOCALE_LANG=ru
+```
+
+### Adding a language
+
+1. Copy `locales/en.json` to `locales/<code>.json` (e.g. `locales/de.json`)
+2. Translate the values (not the keys)
+3. Set `"locale_name"` to the language's native name (e.g. `"Deutsch"`)
+4. Restart the server — the new language appears in Settings automatically
 
 ```json
 {
-  "nav_library":   "Библиотека",
-  "nav_upload":    "Загрузить",
-  "nav_tags":      "Теги",
-  "btn_save":      "Сохранить",
-  "drop_hint":     "Перетащите файлы сюда",
+  "locale_name": "Deutsch",
+  "nav_library":  "Bibliothek",
+  "nav_upload":   "Hochladen",
+  "btn_save":     "Speichern",
   ...
 }
 ```
 
-To keep your translations separate from the source code, create a custom file and point to it:
-
-```bash
-# env var
-LOCALE_FILE=/data/my_strings.json python3 main.py
-
-# or in docker-compose.yml
-environment:
-  - LOCALE_FILE=/app/my_strings.json
-volumes:
-  - ./my_strings.json:/app/my_strings.json
-```
-
-If a key is missing from your file, the interface falls back to the key name itself — so partial translations work fine.
+If a key is missing from your translation file, the interface falls back to the English value.
 
 ## Supported Formats
 

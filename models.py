@@ -26,6 +26,7 @@ class Book:
 class Tag:
     id: int
     name: str
+    book_count: int = 0
 
 
 @dataclass
