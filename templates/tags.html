@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Tags — OPD Server{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3 gap-2">
+  <h5 class="mb-0 me-auto"><i class="bi bi-tags me-2"></i>Tags</h5>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="input-group mb-3">
+      <input type="text" class="form-control" id="new-tag" placeholder="New tag name…">
+      <button class="btn btn-primary" onclick="createTag()"><i class="bi bi-plus-lg me-1"></i>Create</button>
+    </div>
+
+    <ul class="list-group" id="tag-list">
+    {% for t in tags %}
+    <li class="list-group-item d-flex align-items-center gap-2" id="tag-{{ t.id }}">
+      <span class="flex-grow-1 tag-name-display">{{ t.name }}</span>
+      <input type="text" class="form-control form-control-sm flex-grow-1 d-none tag-name-input" value="{{ t.name }}">
+      <a href="/books?tag={{ t.name }}" class="btn btn-sm btn-outline-secondary" title="View books"><i class="bi bi-collection"></i></a>
+      <button class="btn btn-sm btn-outline-secondary edit-btn" onclick="startEdit({{ t.id }})"><i class="bi bi-pencil"></i></button>
+      <button class="btn btn-sm btn-success save-btn d-none" onclick="saveTag({{ t.id }})"><i class="bi bi-check2"></i></button>
+      <button class="btn btn-sm btn-outline-danger" onclick="deleteTag({{ t.id }})"><i class="bi bi-trash"></i></button>
+    </li>
+    {% endfor %}
+    </ul>
+    {% if not tags %}
+    <p class="text-muted text-center py-3">No tags yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function createTag() {
+  const input = document.getElementById('new-tag');
+  const name = input.value.trim();
+  if (!name) return;
+  const resp = await fetch(`/api/tags?name=${encodeURIComponent(name)}`, { method: 'POST' });
+  const tag = await resp.json();
+  input.value = '';
+  const li = document.createElement('li');
+  li.className = 'list-group-item d-flex align-items-center gap-2';
+  li.id = `tag-${tag.id}`;
+  li.innerHTML = `
+    <span class="flex-grow-1 tag-name-display">${tag.name}</span>
+    <input type="text" class="form-control form-control-sm flex-grow-1 d-none tag-name-input" value="${tag.name}">
+    <a href="/books?tag=${encodeURIComponent(tag.name)}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-collection"></i></a>
+    <button class="btn btn-sm btn-outline-secondary edit-btn" onclick="startEdit(${tag.id})"><i class="bi bi-pencil"></i></button>
+    <button class="btn btn-sm btn-success save-btn d-none" onclick="saveTag(${tag.id})"><i class="bi bi-check2"></i></button>
+    <button class="btn btn-sm btn-outline-danger" onclick="deleteTag(${tag.id})"><i class="bi bi-trash"></i></button>`;
+  document.getElementById('tag-list').appendChild(li);
+}
+
+function startEdit(tagId) {
+  const li = document.getElementById(`tag-${tagId}`);
+  li.querySelector('.tag-name-display').classList.add('d-none');
+  li.querySelector('.tag-name-input').classList.remove('d-none');
+  li.querySelector('.edit-btn').classList.add('d-none');
+  li.querySelector('.save-btn').classList.remove('d-none');
+}
+
+async function saveTag(tagId) {
+  const li = document.getElementById(`tag-${tagId}`);
+  const name = li.querySelector('.tag-name-input').value.trim();
+  if (!name) return;
+  await fetch(`/api/tags/${tagId}/rename?name=${encodeURIComponent(name)}`, { method: 'POST' });
+  li.querySelector('.tag-name-display').textContent = name;
+  li.querySelector('.tag-name-display').classList.remove('d-none');
+  li.querySelector('.tag-name-input').classList.add('d-none');
+  li.querySelector('.edit-btn').classList.remove('d-none');
+  li.querySelector('.save-btn').classList.add('d-none');
+}
+
+async function deleteTag(tagId) {
+  if (!confirm('Delete this tag? It will be removed from all books.')) return;
+  await fetch(`/api/tags/${tagId}`, { method: 'DELETE' });
+  document.getElementById(`tag-${tagId}`)?.remove();
+}
+</script>
+{% endblock %}

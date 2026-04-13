@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block title %}Edit: {{ book.title }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3 gap-2">
+  <a href="/books" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h5 class="mb-0">Edit Book</h5>
+</div>
+
+<div class="row g-4">
+  <!-- Cover column -->
+  <div class="col-md-3 text-center">
+    {% if book.cover_path %}
+    <img src="/covers/{{ book.id }}.jpg" class="img-fluid rounded shadow mb-3" id="cover-preview" alt="Cover">
+    {% else %}
+    <div class="cover-placeholder mb-3" id="cover-placeholder"><i class="bi bi-book display-1 text-muted"></i></div>
+    <img src="" class="img-fluid rounded shadow mb-3 d-none" id="cover-preview" alt="Cover">
+    {% endif %}
+    <label class="btn btn-outline-secondary btn-sm w-100">
+      <i class="bi bi-image me-1"></i>Replace Cover
+      <input type="file" id="cover-input" accept="image/*" class="d-none">
+    </label>
+    <div class="mt-2">
+      <a href="/api/download/{{ book.id }}" class="btn btn-primary btn-sm w-100" download>
+        <i class="bi bi-download me-1"></i>Download {{ book.format|upper }}
+      </a>
+    </div>
+  </div>
+
+  <!-- Metadata form -->
+  <div class="col-md-9">
+    <div class="card">
+      <div class="card-body">
+        <form id="edit-form">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Title</label>
+              <input type="text" class="form-control" name="title" value="{{ book.title }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Author</label>
+              <input type="text" class="form-control" name="author" value="{{ book.author or '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Language</label>
+              <input type="text" class="form-control" name="language" value="{{ book.language or 'en' }}" maxlength="10">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Published</label>
+              <input type="text" class="form-control" name="published" value="{{ book.published or '' }}" placeholder="YYYY-MM-DD">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Publisher</label>
+              <input type="text" class="form-control" name="publisher" value="{{ book.publisher or '' }}">
+            </div>
+            <div class="col-md-9">
+              <label class="form-label fw-semibold">Series</label>
+              <input type="text" class="form-control" name="series" value="{{ book.series or '' }}" placeholder="e.g. The Lord of the Rings">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Series #</label>
+              <input type="number" class="form-control" name="series_index" value="{{ book.series_index if book.series_index is not none else '' }}" step="0.1" min="0" placeholder="e.g. 1">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Description</label>
+              <textarea class="form-control" name="description" rows="4">{{ book.description or '' }}</textarea>
+            </div>
+          </div>
+
+          <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" id="write-to-file" {% if book.format == 'epub' %}{% else %}disabled{% endif %}>
+            <label class="form-check-label" for="write-to-file">
+              Write metadata back to EPUB file
+              {% if book.format != 'epub' %}<span class="text-muted">(only supported for EPUB)</span>{% endif %}
+            </label>
+          </div>
+
+          <div class="mt-3 d-flex gap-2">
+            <button type="submit" class="btn btn-success"><i class="bi bi-check2 me-1"></i>Save</button>
+            <button type="button" class="btn btn-outline-info" id="search-meta-btn" data-bs-toggle="modal" data-bs-target="#metaSearchModal">
+              <i class="bi bi-search me-1"></i>Search Metadata
+            </button>
+          </div>
+          <div id="save-status" class="mt-2"></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="card mt-3">
+      <div class="card-header fw-semibold"><i class="bi bi-tags me-1"></i>Tags</div>
+      <div class="card-body">
+        <div id="book-tags" class="mb-2 d-flex flex-wrap gap-1">
+          {% for t in book_tags %}
+          <span class="badge bg-primary d-flex align-items-center gap-1" id="bt-{{ t.id }}">
+            {{ t.name }}
+            <button type="button" class="btn-close btn-close-white btn-sm" style="font-size:.6rem" onclick="removeTag({{ t.id }}, '{{ book.id }}')"></button>
+          </span>
+          {% endfor %}
+        </div>
+        <div class="input-group input-group-sm">
+          <select class="form-select" id="tag-select">
+            <option value="">Add existing tag…</option>
+            {% for t in all_tags %}
+            <option value="{{ t.id }}">{{ t.name }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-outline-secondary" onclick="addExistingTag('{{ book.id }}')">Add</button>
+        </div>
+        <div class="input-group input-group-sm mt-2">
+          <input type="text" class="form-control" id="new-tag-input" placeholder="New tag name…">
+          <button class="btn btn-outline-primary" onclick="createAndAddTag('{{ book.id }}')">Create & Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Metadata Search Modal -->
+<div class="modal fade" id="metaSearchModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-search me-2"></i>Search Metadata</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group mb-3">
+          <input type="text" class="form-control" id="meta-query" placeholder="Title…" value="{{ book.title }}">
+          <input type="text" class="form-control" id="meta-author" placeholder="Author…" value="{{ book.author or '' }}">
+          <button class="btn btn-primary" onclick="searchMetadata('{{ book.id }}')"><i class="bi bi-search"></i> Search</button>
+        </div>
+        <div id="meta-results"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const BOOK_ID = "{{ book.id }}";
+
+// Save metadata
+document.getElementById('edit-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const writeToFile = document.getElementById('write-to-file').checked;
+  const params = new URLSearchParams(fd);
+  if (writeToFile) params.append('write_to_file', 'true');
+  const resp = await fetch(`/api/books/${BOOK_ID}?${params}`, { method: 'POST' });
+  const status = document.getElementById('save-status');
+  if (resp.ok) {
+    status.innerHTML = '<span class="text-success"><i class="bi bi-check2-circle me-1"></i>Saved</span>';
+    setTimeout(() => status.innerHTML = '', 2000);
+  } else {
+    status.innerHTML = '<span class="text-danger">Save failed</span>';
+  }
+});
+
+// Cover replace
+document.getElementById('cover-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  const resp = await fetch(`/api/books/${BOOK_ID}/cover`, { method: 'POST', body: fd });
+  if (resp.ok) {
+    const data = await resp.json();
+    const preview = document.getElementById('cover-preview');
+    preview.src = data.cover + '?t=' + Date.now();
+    preview.classList.remove('d-none');
+    const ph = document.getElementById('cover-placeholder');
+    if (ph) ph.classList.add('d-none');
+  }
+});
+
+// Tag management
+async function removeTag(tagId, bookId) {
+  await fetch(`/api/books/${bookId}/tags/${tagId}`, { method: 'DELETE' });
+  document.getElementById(`bt-${tagId}`)?.remove();
+}
+
+async function addExistingTag(bookId) {
+  const sel = document.getElementById('tag-select');
+  const tagId = sel.value;
+  if (!tagId) return;
+  await fetch(`/api/books/${bookId}/tags/${tagId}`, { method: 'POST' });
+  const tagName = sel.options[sel.selectedIndex].text;
+  appendTagBadge(tagId, tagName, bookId);
+  sel.value = '';
+}
+
+async function createAndAddTag(bookId) {
+  const input = document.getElementById('new-tag-input');
+  const name = input.value.trim();
+  if (!name) return;
+  const resp = await fetch(`/api/tags?name=${encodeURIComponent(name)}`, { method: 'POST' });
+  const tag = await resp.json();
+  await fetch(`/api/books/${bookId}/tags/${tag.id}`, { method: 'POST' });
+  appendTagBadge(tag.id, tag.name, bookId);
+  input.value = '';
+}
+
+function appendTagBadge(tagId, tagName, bookId) {
+  const container = document.getElementById('book-tags');
+  if (document.getElementById(`bt-${tagId}`)) return;
+  const span = document.createElement('span');
+  span.className = 'badge bg-primary d-flex align-items-center gap-1';
+  span.id = `bt-${tagId}`;
+  span.innerHTML = `${tagName} <button type="button" class="btn-close btn-close-white btn-sm" style="font-size:.6rem" onclick="removeTag(${tagId},'${bookId}')"></button>`;
+  container.appendChild(span);
+}
+
+// Metadata search
+async function searchMetadata(bookId) {
+  const q = document.getElementById('meta-query').value;
+  const author = document.getElementById('meta-author').value;
+  document.getElementById('meta-results').innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Searching…</div>';
+  const resp = await fetch(`/api/books/${bookId}/metadata/search?q=${encodeURIComponent(q)}&author=${encodeURIComponent(author)}`);
+  const results = await resp.json();
+  if (!results.length) {
+    document.getElementById('meta-results').innerHTML = '<p class="text-muted text-center">No results found.</p>';
+    return;
+  }
+  const html = results.map((r, i) => `
+    <div class="card mb-2">
+      <div class="card-body p-3 d-flex gap-3">
+        ${r.cover_url ? `<img src="${r.cover_url}" style="width:60px;height:80px;object-fit:cover;border-radius:4px" onerror="this.style.display='none'">` : '<div style="width:60px;height:80px;background:#eee;border-radius:4px;display:flex;align-items:center;justify-content:center"><i class="bi bi-book text-muted"></i></div>'}
+        <div class="flex-grow-1">
+          <div class="fw-semibold">${r.title || ''}</div>
+          <div class="text-muted small">${r.author || ''} ${r.published ? '· ' + r.published.slice(0,4) : ''}</div>
+          <div class="text-muted small">${r.publisher || ''} <span class="badge bg-light text-dark border">${r.source}</span></div>
+          ${r.description ? `<div class="small mt-1 text-muted" style="max-height:3em;overflow:hidden">${r.description}</div>` : ''}
+          ${r.series ? `<div class="small mt-1 text-info"><i class="bi bi-journals me-1"></i>${r.series}${r.series_index ? ' #' + r.series_index : ''}</div>` : ''}
+          ${r.tags.length ? `<div class="mt-1">${r.tags.map(t=>`<span class="badge bg-secondary me-1">${t}</span>`).join('')}</div>` : ''}
+        </div>
+        <div>
+          <button class="btn btn-sm btn-success" onclick="applyMetadata(${i})"><i class="bi bi-check2-all me-1"></i>Apply</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('meta-results').innerHTML = html;
+  window._metaResults = results;
+}
+
+async function applyMetadata(idx) {
+  const r = window._metaResults[idx];
+  const writeToFile = document.getElementById('write-to-file').checked;
+  const params = new URLSearchParams();
+  if (r.title)       params.append('title', r.title);
+  if (r.author)      params.append('author', r.author);
+  if (r.description) params.append('description', r.description);
+  if (r.publisher)   params.append('publisher', r.publisher);
+  if (r.published)   params.append('published', r.published);
+  if (r.language)    params.append('language', r.language);
+  if (r.cover_url)        params.append('cover_url', r.cover_url);
+  if (r.tags.length)      params.append('tags', r.tags.join(','));
+  if (r.series)           params.append('series', r.series);
+  if (r.series_index != null) params.append('series_index', r.series_index);
+  if (writeToFile)   params.append('write_to_file', 'true');
+
+  const resp = await fetch(`/api/books/${BOOK_ID}/metadata/apply?${params}`, { method: 'POST' });
+  if (resp.ok) {
+    bootstrap.Modal.getInstance(document.getElementById('metaSearchModal')).hide();
+    location.reload();
+  }
+}
+</script>
+{% endblock %}
