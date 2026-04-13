@@ -139,19 +139,22 @@
 
 <!-- Metadata Search Modal -->
 <div class="modal fade" id="metaSearchModal" tabindex="-1">
-  <div class="modal-dialog modal-xl">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-search me-2"></i>{{ ui.modal_search_metadata }}</h5>
+      <div class="modal-header" style="border-bottom:1px solid var(--border)">
+        <h5 class="modal-title" style="font-size:.95rem;font-weight:600">
+          <i class="bi bi-search me-2" style="color:var(--accent)"></i>{{ ui.modal_search_metadata }}
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
-        <div class="input-group mb-3">
+      <div class="modal-body" style="background:var(--bg);padding:1.25rem">
+        <div class="d-flex gap-2 mb-4">
           <input type="text" class="form-control" id="meta-query"
             placeholder="{{ ui.meta_title_placeholder }}" value="{{ book.title }}">
           <input type="text" class="form-control" id="meta-author"
-            placeholder="{{ ui.meta_author_placeholder }}" value="{{ book.author or '' }}">
-          <button class="btn btn-primary" onclick="searchMetadata('{{ book.id }}')">
+            placeholder="{{ ui.meta_author_placeholder }}" value="{{ book.author or '' }}"
+            style="max-width:220px">
+          <button class="btn btn-primary flex-shrink-0" onclick="searchMetadata('{{ book.id }}')">
             <i class="bi bi-search me-1"></i>{{ ui.btn_search }}
           </button>
         </div>
@@ -235,41 +238,73 @@ function appendTagBadge(tagId, tagName, bookId) {
 async function searchMetadata(bookId) {
   const q      = document.getElementById('meta-query').value;
   const author = document.getElementById('meta-author').value;
-  document.getElementById('meta-results').innerHTML =
-    `<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> ${window.UI.searching}</div>`;
+  document.getElementById('meta-results').innerHTML = `
+    <div class="text-center py-5 text-muted">
+      <div class="spinner-border spinner-border-sm text-primary mb-2"></div>
+      <div class="small">${window.UI.searching}</div>
+    </div>`;
+
   const resp = await fetch(`/api/books/${bookId}/metadata/search?q=${encodeURIComponent(q)}&author=${encodeURIComponent(author)}`);
   const results = await resp.json();
+
   if (!results.length) {
-    document.getElementById('meta-results').innerHTML =
-      `<p class="text-muted text-center py-3">${window.UI.no_results}</p>`;
+    document.getElementById('meta-results').innerHTML = `
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-search" style="font-size:2rem;opacity:.3;display:block;margin-bottom:.5rem"></i>
+        <div class="small">${window.UI.no_results}</div>
+      </div>`;
     return;
   }
-  const html = results.map((r, i) => `
-    <div class="d-flex gap-3 p-3 mb-2 rounded border bg-white" style="border-color:var(--border)!important">
-      ${r.cover_url
-        ? `<img src="${r.cover_url}" style="width:56px;height:76px;object-fit:cover;border-radius:4px;flex-shrink:0" onerror="this.style.display='none'">`
-        : `<div style="width:56px;height:76px;background:#e8ecf0;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center"><i class="bi bi-book text-muted"></i></div>`
-      }
-      <div class="flex-grow-1 min-w-0">
-        <div class="fw-semibold" style="font-size:.9rem">${r.title || ''}</div>
-        <div class="text-muted small">${r.author || ''} ${r.published ? '· ' + r.published.slice(0,4) : ''}</div>
-        <div class="small mt-1">
-          ${r.publisher ? `<span class="text-muted">${r.publisher}</span> ` : ''}
-          <span class="fmt-badge" style="background:#f0f2f5;color:#6e7789">${r.source}</span>
+
+  const html = results.map((r, i) => {
+    const year = r.published ? r.published.slice(0, 4) : '';
+    const coverHtml = r.cover_url
+      ? `<img src="${r.cover_url}" class="meta-cover" onerror="this.replaceWith(document.querySelector('.meta-cover-ph').cloneNode(true))">`
+      : `<div class="meta-cover-ph"><i class="bi bi-book"></i></div>`;
+
+    const seriesHtml = r.series
+      ? `<div class="meta-series"><i class="bi bi-journals"></i> ${escHtml(r.series)}${r.series_index != null ? ' #' + r.series_index : ''}</div>`
+      : '';
+
+    const tagsHtml = r.tags.length
+      ? `<div class="meta-tags">${r.tags.map(t => `<span class="tag-pill">${escHtml(t)}</span>`).join('')}</div>`
+      : '';
+
+    const descHtml = r.description
+      ? `<p class="meta-desc">${escHtml(r.description)}</p>`
+      : '';
+
+    return `
+      <div class="meta-result-card" data-idx="${i}">
+        <div class="meta-result-cover">${coverHtml}</div>
+        <div class="meta-result-body">
+          <div class="meta-result-header">
+            <div class="meta-result-title">${escHtml(r.title || '')}</div>
+            <span class="meta-source-badge">${escHtml(r.source)}</span>
+          </div>
+          <div class="meta-result-sub">
+            ${r.author ? `<span class="meta-author">${escHtml(r.author)}</span>` : ''}
+            ${year ? `<span class="meta-year">${year}</span>` : ''}
+            ${r.publisher ? `<span class="meta-publisher">${escHtml(r.publisher)}</span>` : ''}
+          </div>
+          ${seriesHtml}
+          ${descHtml}
+          ${tagsHtml}
         </div>
-        ${r.description ? `<div class="small text-muted mt-1" style="max-height:2.8em;overflow:hidden;line-height:1.4">${r.description}</div>` : ''}
-        ${r.series ? `<div class="small mt-1" style="color:var(--accent)"><i class="bi bi-journals me-1"></i>${r.series}${r.series_index ? ' #'+r.series_index : ''}</div>` : ''}
-        ${r.tags.length ? `<div class="mt-1 d-flex flex-wrap gap-1">${r.tags.map(t=>`<span class="tag-pill">${t}</span>`).join('')}</div>` : ''}
-      </div>
-      <div class="flex-shrink-0">
-        <button class="btn btn-sm btn-success" onclick="applyMetadata(${i})">
-          <i class="bi bi-check2-all me-1"></i>${window.UI.btn_apply}
-        </button>
-      </div>
-    </div>
-  `).join('');
+        <div class="meta-result-action">
+          <button class="btn btn-sm btn-success meta-apply-btn" onclick="applyMetadata(${i})">
+            <i class="bi bi-check2-all me-1"></i>${window.UI.btn_apply}
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+
   document.getElementById('meta-results').innerHTML = html;
   window._metaResults = results;
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 async function applyMetadata(idx) {
