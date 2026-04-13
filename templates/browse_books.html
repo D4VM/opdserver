@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ browse_title }} — OPD Server{% endblock %}
+{% block title %}{{ browse_title }} — {{ SERVER_TITLE }}{% endblock %}
 {% block content %}
 <div class="page-header">
   <a href="{{ back_url }}" class="btn btn-sm btn-outline-secondary">
@@ -17,10 +17,10 @@
   <thead>
     <tr>
       <th style="width:46px"></th>
-      <th>Title</th>
-      {% if not show_series_index %}<th>Author</th>{% endif %}
-      <th>Format</th>
-      <th>Published</th>
+      <th>{{ ui.col_title }}</th>
+      {% if not show_series_index %}<th>{{ ui.col_author }}</th>{% endif %}
+      <th>{{ ui.col_format }}</th>
+      <th>{{ ui.col_published }}</th>
       <th style="width:108px"></th>
     </tr>
   </thead>
@@ -35,7 +35,8 @@
       {% endif %}
     </td>
     <td>
-      <a href="/books/{{ book.id }}/edit" class="fw-semibold text-decoration-none" style="color:var(--text)">
+      <a href="/books/{{ book.id }}/edit" class="fw-semibold text-decoration-none"
+        style="color:var(--text)">
         {% if show_series_index and book.series_index is not none %}
         <span class="text-subtle me-1">[{{ book.series_index | int if book.series_index == (book.series_index | int) else book.series_index }}]</span>
         {% endif %}
@@ -51,13 +52,11 @@
     <td class="text-muted" style="font-size:.82rem">{{ (book.published or '')[:4] or '—' }}</td>
     <td>
       <div class="d-flex gap-1 justify-content-end">
-        <a href="/books/{{ book.id }}/edit" class="btn btn-xs btn-outline-secondary" title="Edit">
-          <i class="bi bi-pencil"></i>
-        </a>
-        <a href="/api/download/{{ book.id }}" class="btn btn-xs btn-outline-primary" title="Download" download>
-          <i class="bi bi-download"></i>
-        </a>
-        <button class="btn btn-xs btn-outline-danger" title="Delete"
+        <a href="/books/{{ book.id }}/edit" class="btn btn-xs btn-outline-secondary"
+          title="{{ ui.btn_edit }}"><i class="bi bi-pencil"></i></a>
+        <a href="/api/download/{{ book.id }}" class="btn btn-xs btn-outline-primary"
+          title="{{ ui.btn_download }}" download><i class="bi bi-download"></i></a>
+        <button class="btn btn-xs btn-outline-danger" title="{{ ui.btn_delete }}"
           onclick="deleteBook('{{ book.id }}', '{{ book.title|replace("'", "\\'") }}')">
           <i class="bi bi-trash"></i>
         </button>
@@ -84,7 +83,7 @@
 {% else %}
 <div class="empty-state">
   <i class="bi bi-inbox"></i>
-  <p>No books here yet.</p>
+  <p>{{ ui.no_books_here }}</p>
 </div>
 {% endif %}
 {% endblock %}

@@ -1,16 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Tags — OPD Server{% endblock %}
+{% block title %}{{ ui.tags }} — {{ SERVER_TITLE }}{% endblock %}
 {% block content %}
 <div class="page-header">
-  <h1 class="page-title"><i class="bi bi-tags-fill"></i>Tags</h1>
+  <h1 class="page-title"><i class="bi bi-tags-fill"></i>{{ ui.tags }}</h1>
 </div>
 
 <div class="row">
   <div class="col-md-6 col-lg-5">
     <div class="input-group input-group-sm mb-3">
-      <input type="text" class="form-control" id="new-tag" placeholder="New tag name…">
+      <input type="text" class="form-control" id="new-tag"
+        placeholder="{{ ui.new_tag_placeholder }}">
       <button class="btn btn-primary" onclick="createTag()">
-        <i class="bi bi-plus-lg me-1"></i>Create
+        <i class="bi bi-plus-lg me-1"></i>{{ ui.btn_create }}
       </button>
     </div>
 
@@ -23,9 +24,8 @@
         <span class="flex-grow-1 tag-name-display small fw-semibold">{{ t.name }}</span>
         <input type="text" class="form-control form-control-sm flex-grow-1 d-none tag-name-input"
           value="{{ t.name }}">
-        <a href="/books?tag={{ t.name }}" class="btn btn-xs btn-outline-secondary" title="View books">
-          <i class="bi bi-collection"></i>
-        </a>
+        <a href="/books?tag={{ t.name }}" class="btn btn-xs btn-outline-secondary"
+          title="{{ ui.btn_edit }}"><i class="bi bi-collection"></i></a>
         <button class="btn btn-xs btn-outline-secondary edit-btn" onclick="startEdit({{ t.id }})">
           <i class="bi bi-pencil"></i>
         </button>
@@ -42,7 +42,7 @@
     {% else %}
     <div class="empty-state" style="padding:2.5rem 1rem">
       <i class="bi bi-tags"></i>
-      <p>No tags yet.</p>
+      <p>{{ ui.no_tags_yet }}</p>
     </div>
     {% endif %}
   </div>
@@ -61,10 +61,10 @@ async function createTag() {
 
   let list = document.getElementById('tag-list');
   if (!list) {
-    // First tag — rebuild the container
     const col = document.querySelector('.col-md-6');
-    col.insertAdjacentHTML('beforeend', '<div class="card"><ul class="list-group list-group-flush" id="tag-list"></ul></div>');
     col.querySelector('.empty-state')?.remove();
+    col.insertAdjacentHTML('beforeend',
+      '<div class="card"><ul class="list-group list-group-flush" id="tag-list"></ul></div>');
     list = document.getElementById('tag-list');
   }
 
@@ -75,7 +75,7 @@ async function createTag() {
   li.innerHTML = `
     <span class="flex-grow-1 tag-name-display small fw-semibold">${tag.name}</span>
     <input type="text" class="form-control form-control-sm flex-grow-1 d-none tag-name-input" value="${tag.name}">
-    <a href="/books?tag=${encodeURIComponent(tag.name)}" class="btn btn-xs btn-outline-secondary" title="View books"><i class="bi bi-collection"></i></a>
+    <a href="/books?tag=${encodeURIComponent(tag.name)}" class="btn btn-xs btn-outline-secondary"><i class="bi bi-collection"></i></a>
     <button class="btn btn-xs btn-outline-secondary edit-btn" onclick="startEdit(${tag.id})"><i class="bi bi-pencil"></i></button>
     <button class="btn btn-xs btn-success save-btn d-none" onclick="saveTag(${tag.id})"><i class="bi bi-check2"></i></button>
     <button class="btn btn-xs btn-outline-danger" onclick="deleteTag(${tag.id})"><i class="bi bi-trash"></i></button>`;
@@ -104,10 +104,9 @@ async function saveTag(tagId) {
 }
 
 async function deleteTag(tagId) {
-  if (!confirm('Delete this tag? It will be removed from all books.')) return;
+  if (!confirm(window.UI.confirm_delete_tag)) return;
   await fetch(`/api/tags/${tagId}`, { method: 'DELETE' });
-  const li = document.getElementById(`tag-${tagId}`);
-  li?.remove();
+  document.getElementById(`tag-${tagId}`)?.remove();
   if (!document.querySelector('#tag-list li')) {
     document.querySelector('.card')?.remove();
   }

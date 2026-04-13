@@ -8,10 +8,13 @@ import urllib.parse
 import database
 import config
 from database import get_db
+from ui_strings import load_strings
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(config.TEMPLATES_DIR))
 templates.env.filters["urlencode"] = urllib.parse.quote
+templates.env.globals["ui"] = load_strings()
+templates.env.globals["SERVER_TITLE"] = config.SERVER_TITLE
 
 
 @router.get("/", response_class=RedirectResponse)

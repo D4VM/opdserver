@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Authors — OPD Server{% endblock %}
+{% block title %}{{ ui.authors }} — {{ SERVER_TITLE }}{% endblock %}
 {% block content %}
 <div class="page-header">
   <h1 class="page-title">
-    <i class="bi bi-people-fill"></i>Authors
+    <i class="bi bi-people-fill"></i>{{ ui.authors }}
     <span class="badge bg-secondary ms-1" style="font-size:.65rem;vertical-align:middle">{{ authors | length }}</span>
   </h1>
 </div>
@@ -26,7 +26,7 @@
           <div class="fw-semibold small text-truncate" style="color:var(--text)"
             title="{{ a.author }}">{{ a.author }}</div>
           <div class="text-subtle" style="font-size:.72rem">
-            {{ a.book_count }} book{{ 's' if a.book_count != 1 else '' }}
+            {{ a.book_count }} {{ ui.books_plural if a.book_count != 1 else ui.book_singular }}
           </div>
         </div>
       </div>
@@ -37,7 +37,7 @@
 {% else %}
 <div class="empty-state">
   <i class="bi bi-person-circle"></i>
-  <p>No authors yet. <a href="/upload">Upload some books!</a></p>
+  <p>{{ ui.no_authors_yet }} <a href="/upload">{{ ui.upload_prompt_books }}</a></p>
 </div>
 {% endif %}
 {% endblock %}

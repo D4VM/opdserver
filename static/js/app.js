@@ -1,9 +1,9 @@
-// Global book delete handler used from books.html
+// Global book delete handler used from books.html / browse_books.html
 async function deleteBook(bookId, title) {
-  if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+  const tpl = window.UI?.confirm_delete_book || 'Delete "%s"? This cannot be undone.';
+  if (!confirm(tpl.replace('%s', title))) return;
   const resp = await fetch(`/api/books/${bookId}`, { method: 'DELETE' });
   if (resp.ok) {
-    const row = document.querySelector(`[onclick*="${bookId}"]`)?.closest('tr');
-    row?.remove();
+    document.querySelector(`[onclick*="${bookId}"]`)?.closest('tr')?.remove();
   }
 }

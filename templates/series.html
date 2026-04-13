@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Series — OPD Server{% endblock %}
+{% block title %}{{ ui.series }} — {{ SERVER_TITLE }}{% endblock %}
 {% block content %}
 <div class="page-header">
   <h1 class="page-title">
-    <i class="bi bi-journals"></i>Series
+    <i class="bi bi-journals"></i>{{ ui.series }}
     <span class="badge bg-secondary ms-1" style="font-size:.65rem;vertical-align:middle">{{ series_list | length }}</span>
   </h1>
 </div>
@@ -26,7 +26,7 @@
           <div class="fw-semibold small text-truncate" style="color:var(--text)"
             title="{{ s.series }}">{{ s.series }}</div>
           <div class="text-subtle" style="font-size:.72rem">
-            {{ s.book_count }} book{{ 's' if s.book_count != 1 else '' }}
+            {{ s.book_count }} {{ ui.books_plural if s.book_count != 1 else ui.book_singular }}
           </div>
         </div>
       </div>
@@ -37,7 +37,7 @@
 {% else %}
 <div class="empty-state">
   <i class="bi bi-journals"></i>
-  <p>No series yet. Edit a book to assign it to a series.</p>
+  <p>{{ ui.no_series_yet }}</p>
 </div>
 {% endif %}
 {% endblock %}

@@ -128,6 +128,36 @@ class MyPlugin(MetadataPlugin):
         )]
 ```
 
+## Localization
+
+All UI labels live in `strings.json`. To translate the interface, edit the values (not the keys):
+
+```json
+{
+  "nav_library":   "Библиотека",
+  "nav_upload":    "Загрузить",
+  "nav_tags":      "Теги",
+  "btn_save":      "Сохранить",
+  "drop_hint":     "Перетащите файлы сюда",
+  ...
+}
+```
+
+To keep your translations separate from the source code, create a custom file and point to it:
+
+```bash
+# env var
+LOCALE_FILE=/data/my_strings.json python3 main.py
+
+# or in docker-compose.yml
+environment:
+  - LOCALE_FILE=/app/my_strings.json
+volumes:
+  - ./my_strings.json:/app/my_strings.json
+```
+
+If a key is missing from your file, the interface falls back to the key name itself — so partial translations work fine.
+
 ## Supported Formats
 
 EPUB, PDF, MOBI, AZW, AZW3, CBZ, FB2, TXT

@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Edit: {{ book.title }}{% endblock %}
+{% block title %}{{ ui.edit_book }}: {{ book.title }}{% endblock %}
 {% block content %}
 <div class="page-header">
   <a href="/books" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
-  <h1 class="page-title">Edit Book</h1>
+  <h1 class="page-title">{{ ui.edit_book }}</h1>
 </div>
 
 <div class="row g-4">
@@ -21,57 +21,57 @@
       {% endif %}
     </div>
     <label class="btn btn-outline-secondary btn-sm w-100 mb-2">
-      <i class="bi bi-image me-1"></i>Replace Cover
+      <i class="bi bi-image me-1"></i>{{ ui.btn_replace_cover }}
       <input type="file" id="cover-input" accept="image/*" class="d-none">
     </label>
     <a href="/api/download/{{ book.id }}" class="btn btn-primary btn-sm w-100" download>
-      <i class="bi bi-download me-1"></i>Download {{ book.format | upper }}
+      <i class="bi bi-download me-1"></i>{{ ui.btn_download }} {{ book.format | upper }}
     </a>
   </div>
 
   <!-- Metadata form -->
   <div class="col-md-9">
     <div class="card">
-      <div class="card-header"><i class="bi bi-pencil-square me-1"></i>Metadata</div>
+      <div class="card-header"><i class="bi bi-pencil-square me-1"></i>{{ ui.lbl_metadata }}</div>
       <div class="card-body">
         <form id="edit-form">
           <div class="row g-3">
             <div class="col-12">
-              <label class="form-label">Title</label>
+              <label class="form-label">{{ ui.lbl_title }}</label>
               <input type="text" class="form-control" name="title" value="{{ book.title }}">
             </div>
             <div class="col-md-6">
-              <label class="form-label">Author</label>
+              <label class="form-label">{{ ui.lbl_author }}</label>
               <input type="text" class="form-control" name="author" value="{{ book.author or '' }}">
             </div>
             <div class="col-md-3">
-              <label class="form-label">Language</label>
+              <label class="form-label">{{ ui.lbl_language }}</label>
               <input type="text" class="form-control" name="language"
                 value="{{ book.language or 'en' }}" maxlength="10">
             </div>
             <div class="col-md-3">
-              <label class="form-label">Published</label>
+              <label class="form-label">{{ ui.lbl_published }}</label>
               <input type="text" class="form-control" name="published"
                 value="{{ book.published or '' }}" placeholder="YYYY-MM-DD">
             </div>
             <div class="col-md-6">
-              <label class="form-label">Publisher</label>
+              <label class="form-label">{{ ui.lbl_publisher }}</label>
               <input type="text" class="form-control" name="publisher"
                 value="{{ book.publisher or '' }}">
             </div>
             <div class="col-md-9">
-              <label class="form-label">Series</label>
+              <label class="form-label">{{ ui.lbl_series }}</label>
               <input type="text" class="form-control" name="series"
                 value="{{ book.series or '' }}" placeholder="e.g. The Lord of the Rings">
             </div>
             <div class="col-md-3">
-              <label class="form-label">Series #</label>
+              <label class="form-label">{{ ui.lbl_series_num }}</label>
               <input type="number" class="form-control" name="series_index"
                 value="{{ book.series_index if book.series_index is not none else '' }}"
                 step="0.1" min="0" placeholder="1">
             </div>
             <div class="col-12">
-              <label class="form-label">Description</label>
+              <label class="form-label">{{ ui.lbl_description }}</label>
               <textarea class="form-control" name="description" rows="4">{{ book.description or '' }}</textarea>
             </div>
           </div>
@@ -80,20 +80,20 @@
             <input class="form-check-input" type="checkbox" id="write-to-file"
               {% if book.format != 'epub' %}disabled{% endif %}>
             <label class="form-check-label small" for="write-to-file">
-              Write metadata back to EPUB file
+              {{ ui.write_to_epub }}
               {% if book.format != 'epub' %}
-              <span class="text-muted">(EPUB only)</span>
+              <span class="text-muted">({{ ui.epub_only }})</span>
               {% endif %}
             </label>
           </div>
 
           <div class="d-flex gap-2 mt-3 align-items-center">
             <button type="submit" class="btn btn-success btn-sm">
-              <i class="bi bi-check2 me-1"></i>Save
+              <i class="bi bi-check2 me-1"></i>{{ ui.btn_save }}
             </button>
             <button type="button" class="btn btn-outline-secondary btn-sm"
               data-bs-toggle="modal" data-bs-target="#metaSearchModal">
-              <i class="bi bi-search me-1"></i>Search Metadata
+              <i class="bi bi-search me-1"></i>{{ ui.btn_search_metadata }}
             </button>
             <span id="save-status" class="ms-2 small"></span>
           </div>
@@ -103,7 +103,7 @@
 
     <!-- Tags -->
     <div class="card mt-3">
-      <div class="card-header"><i class="bi bi-tags-fill me-1"></i>Tags</div>
+      <div class="card-header"><i class="bi bi-tags-fill me-1"></i>{{ ui.lbl_tags }}</div>
       <div class="card-body">
         <div id="book-tags" class="mb-2 d-flex flex-wrap gap-1" style="min-height:1.5rem">
           {% for t in book_tags %}
@@ -116,16 +116,21 @@
         </div>
         <div class="input-group input-group-sm">
           <select class="form-select" id="tag-select">
-            <option value="">Add existing tag…</option>
+            <option value="">{{ ui.add_existing_tag }}</option>
             {% for t in all_tags %}
             <option value="{{ t.id }}">{{ t.name }}</option>
             {% endfor %}
           </select>
-          <button class="btn btn-outline-secondary" onclick="addExistingTag('{{ book.id }}')">Add</button>
+          <button class="btn btn-outline-secondary" onclick="addExistingTag('{{ book.id }}')">
+            {{ ui.btn_add }}
+          </button>
         </div>
         <div class="input-group input-group-sm mt-2">
-          <input type="text" class="form-control" id="new-tag-input" placeholder="New tag name…">
-          <button class="btn btn-outline-primary" onclick="createAndAddTag('{{ book.id }}')">Create & Add</button>
+          <input type="text" class="form-control" id="new-tag-input"
+            placeholder="{{ ui.new_tag_placeholder }}">
+          <button class="btn btn-outline-primary" onclick="createAndAddTag('{{ book.id }}')">
+            {{ ui.btn_create_add }}
+          </button>
         </div>
       </div>
     </div>
@@ -137,17 +142,17 @@
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-search me-2"></i>Search Metadata</h5>
+        <h5 class="modal-title"><i class="bi bi-search me-2"></i>{{ ui.modal_search_metadata }}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div class="input-group mb-3">
           <input type="text" class="form-control" id="meta-query"
-            placeholder="Title…" value="{{ book.title }}">
+            placeholder="{{ ui.meta_title_placeholder }}" value="{{ book.title }}">
           <input type="text" class="form-control" id="meta-author"
-            placeholder="Author…" value="{{ book.author or '' }}">
+            placeholder="{{ ui.meta_author_placeholder }}" value="{{ book.author or '' }}">
           <button class="btn btn-primary" onclick="searchMetadata('{{ book.id }}')">
-            <i class="bi bi-search me-1"></i>Search
+            <i class="bi bi-search me-1"></i>{{ ui.btn_search }}
           </button>
         </div>
         <div id="meta-results"></div>
@@ -161,7 +166,6 @@
 <script>
 const BOOK_ID = "{{ book.id }}";
 
-// Save metadata
 document.getElementById('edit-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
@@ -171,14 +175,13 @@ document.getElementById('edit-form').addEventListener('submit', async (e) => {
   const resp = await fetch(`/api/books/${BOOK_ID}?${params}`, { method: 'POST' });
   const status = document.getElementById('save-status');
   if (resp.ok) {
-    status.innerHTML = '<span class="text-success"><i class="bi bi-check2-circle me-1"></i>Saved</span>';
+    status.innerHTML = `<span class="text-success"><i class="bi bi-check2-circle me-1"></i>${window.UI.saved}</span>`;
     setTimeout(() => status.innerHTML = '', 2000);
   } else {
-    status.innerHTML = '<span class="text-danger">Save failed</span>';
+    status.innerHTML = `<span class="text-danger">${window.UI.save_failed}</span>`;
   }
 });
 
-// Cover replace
 document.getElementById('cover-input').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -190,12 +193,10 @@ document.getElementById('cover-input').addEventListener('change', async (e) => {
     const preview = document.getElementById('cover-preview');
     preview.src = data.cover + '?t=' + Date.now();
     preview.classList.remove('d-none');
-    const ph = document.getElementById('cover-placeholder');
-    if (ph) ph.classList.add('d-none');
+    document.getElementById('cover-placeholder')?.classList.add('d-none');
   }
 });
 
-// Tag management
 async function removeTag(tagId, bookId) {
   await fetch(`/api/books/${bookId}/tags/${tagId}`, { method: 'DELETE' });
   document.getElementById(`bt-${tagId}`)?.remove();
@@ -206,8 +207,7 @@ async function addExistingTag(bookId) {
   const tagId = sel.value;
   if (!tagId) return;
   await fetch(`/api/books/${bookId}/tags/${tagId}`, { method: 'POST' });
-  const tagName = sel.options[sel.selectedIndex].text;
-  appendTagBadge(tagId, tagName, bookId);
+  appendTagBadge(tagId, sel.options[sel.selectedIndex].text, bookId);
   sel.value = '';
 }
 
@@ -232,16 +232,16 @@ function appendTagBadge(tagId, tagName, bookId) {
   container.appendChild(span);
 }
 
-// Metadata search
 async function searchMetadata(bookId) {
-  const q = document.getElementById('meta-query').value;
+  const q      = document.getElementById('meta-query').value;
   const author = document.getElementById('meta-author').value;
   document.getElementById('meta-results').innerHTML =
-    '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Searching…</div>';
+    `<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> ${window.UI.searching}</div>`;
   const resp = await fetch(`/api/books/${bookId}/metadata/search?q=${encodeURIComponent(q)}&author=${encodeURIComponent(author)}`);
   const results = await resp.json();
   if (!results.length) {
-    document.getElementById('meta-results').innerHTML = '<p class="text-muted text-center py-3">No results found.</p>';
+    document.getElementById('meta-results').innerHTML =
+      `<p class="text-muted text-center py-3">${window.UI.no_results}</p>`;
     return;
   }
   const html = results.map((r, i) => `
@@ -255,7 +255,7 @@ async function searchMetadata(bookId) {
         <div class="text-muted small">${r.author || ''} ${r.published ? '· ' + r.published.slice(0,4) : ''}</div>
         <div class="small mt-1">
           ${r.publisher ? `<span class="text-muted">${r.publisher}</span> ` : ''}
-          <span class="fmt-badge fmt-${r.source.toLowerCase().replace(/\s+/g,'')}" style="background:#f0f2f5;color:#6e7789">${r.source}</span>
+          <span class="fmt-badge" style="background:#f0f2f5;color:#6e7789">${r.source}</span>
         </div>
         ${r.description ? `<div class="small text-muted mt-1" style="max-height:2.8em;overflow:hidden;line-height:1.4">${r.description}</div>` : ''}
         ${r.series ? `<div class="small mt-1" style="color:var(--accent)"><i class="bi bi-journals me-1"></i>${r.series}${r.series_index ? ' #'+r.series_index : ''}</div>` : ''}
@@ -263,7 +263,7 @@ async function searchMetadata(bookId) {
       </div>
       <div class="flex-shrink-0">
         <button class="btn btn-sm btn-success" onclick="applyMetadata(${i})">
-          <i class="bi bi-check2-all me-1"></i>Apply
+          <i class="bi bi-check2-all me-1"></i>${window.UI.btn_apply}
         </button>
       </div>
     </div>
@@ -287,7 +287,6 @@ async function applyMetadata(idx) {
   if (r.series)      params.append('series', r.series);
   if (r.series_index != null) params.append('series_index', r.series_index);
   if (writeToFile)   params.append('write_to_file', 'true');
-
   const resp = await fetch(`/api/books/${BOOK_ID}/metadata/apply?${params}`, { method: 'POST' });
   if (resp.ok) {
     bootstrap.Modal.getInstance(document.getElementById('metaSearchModal')).hide();

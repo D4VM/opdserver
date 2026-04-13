@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Upload — OPD Server{% endblock %}
+{% block title %}{{ ui.upload_books }} — {{ SERVER_TITLE }}{% endblock %}
 {% block content %}
 <div class="page-header">
   <a href="/books" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
-  <h1 class="page-title"><i class="bi bi-cloud-upload-fill"></i>Upload Books</h1>
+  <h1 class="page-title"><i class="bi bi-cloud-upload-fill"></i>{{ ui.upload_books }}</h1>
 </div>
 
 <div class="row justify-content-center">
   <div class="col-md-8 col-lg-6">
     <div id="drop-zone" class="border border-2 border-dashed rounded p-5 text-center mb-4">
       <i class="bi bi-cloud-upload display-4 text-muted"></i>
-      <p class="mt-2 mb-1 fs-5 fw-semibold">Drag &amp; drop ebook files here</p>
-      <p class="text-muted small mb-3">Supported: EPUB, PDF, MOBI, AZW, CBZ, FB2</p>
+      <p class="mt-2 mb-1 fs-5 fw-semibold">{{ ui.drop_hint }}</p>
+      <p class="text-muted small mb-3">{{ ui.supported_formats }}</p>
       <label class="btn btn-primary">
-        <i class="bi bi-folder2-open me-1"></i>Browse Files
+        <i class="bi bi-folder2-open me-1"></i>{{ ui.btn_browse_files }}
         <input type="file" id="file-input" multiple
           accept=".epub,.pdf,.mobi,.azw,.azw3,.cbz,.fb2,.txt" class="d-none">
       </label>
@@ -46,11 +46,16 @@ async function uploadFiles(files) {
   const fd = new FormData();
   for (const f of files) fd.append('files', f);
 
+  const fileWord = files.length > 1
+    ? (window.UI.files_plural  || 'files')
+    : (window.UI.file_singular || 'file');
+  const uploading = window.UI.uploading || 'Uploading';
+
   const progressId = 'prog-' + Date.now();
   queue.innerHTML = `
     <div id="${progressId}" class="mb-3">
       <div class="d-flex justify-content-between small mb-1">
-        <span class="text-muted">Uploading ${files.length} file${files.length > 1 ? 's' : ''}…</span>
+        <span class="text-muted">${uploading} ${files.length} ${fileWord}…</span>
       </div>
       <div class="progress" style="height:6px">
         <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width:100%"></div>
@@ -78,12 +83,12 @@ async function uploadFiles(files) {
             <div class="flex-grow-1">
               <div class="fw-semibold">${r.title}</div>
               <div class="text-muted small">
-                ${r.author || 'Unknown author'}
+                ${r.author || window.UI.unknown_author}
                 · <span class="fmt-badge fmt-${r.format}">${r.format}</span>
               </div>
             </div>
             <a href="/books/${r.id}/edit" class="btn btn-sm btn-outline-secondary">
-              <i class="bi bi-pencil me-1"></i>Edit
+              <i class="bi bi-pencil me-1"></i>${window.UI.btn_edit}
             </a>
           </div>
         </div>`;
@@ -92,12 +97,12 @@ async function uploadFiles(files) {
     results.innerHTML = html +
       `<div class="text-center mt-3">
         <a href="/books" class="btn btn-success">
-          <i class="bi bi-collection me-1"></i>View Library
+          <i class="bi bi-collection me-1"></i>${window.UI.btn_view_library}
         </a>
       </div>`;
   } catch {
     document.getElementById(progressId)?.remove();
-    results.innerHTML = '<div class="alert alert-danger">Upload failed. Please try again.</div>';
+    results.innerHTML = `<div class="alert alert-danger">${window.UI.upload_failed}</div>`;
   }
   fileInput.value = '';
 }

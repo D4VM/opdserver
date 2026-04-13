@@ -1,22 +1,22 @@
 {% extends "base.html" %}
-{% block title %}Library — OPD Server{% endblock %}
+{% block title %}{{ ui.library }} — {{ SERVER_TITLE }}{% endblock %}
 {% block content %}
 <div class="page-header">
   <h1 class="page-title">
     <i class="bi bi-collection-fill"></i>
-    Library
+    {{ ui.library }}
     <span class="badge bg-secondary ms-1" style="font-size:.65rem;vertical-align:middle">{{ total }}</span>
   </h1>
   <a href="/upload" class="btn btn-primary btn-sm ms-auto">
-    <i class="bi bi-cloud-upload me-1"></i>Upload
+    <i class="bi bi-cloud-upload me-1"></i>{{ ui.btn_upload }}
   </a>
 </div>
 
 <form class="d-flex gap-2 mb-3 flex-wrap" method="get" action="/books">
   <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
-    style="max-width:280px" placeholder="Search title, author, series…">
+    style="max-width:280px" placeholder="{{ ui.search_placeholder }}">
   <select name="tag" class="form-select form-select-sm" style="max-width:180px">
-    <option value="">All tags</option>
+    <option value="">{{ ui.filter_all_tags }}</option>
     {% for t in tags %}
     <option value="{{ t.name }}" {% if tag == t.name %}selected{% endif %}>{{ t.name }}</option>
     {% endfor %}
@@ -33,12 +33,12 @@
   <thead>
     <tr>
       <th style="width:46px"></th>
-      <th>Title</th>
-      <th>Author</th>
-      <th>Format</th>
-      <th>Series</th>
-      <th>Tags</th>
-      <th>Added</th>
+      <th>{{ ui.col_title }}</th>
+      <th>{{ ui.col_author }}</th>
+      <th>{{ ui.col_format }}</th>
+      <th>{{ ui.col_series }}</th>
+      <th>{{ ui.col_tags }}</th>
+      <th>{{ ui.col_added }}</th>
       <th style="width:108px"></th>
     </tr>
   </thead>
@@ -87,13 +87,11 @@
     <td class="text-muted" style="font-size:.78rem;white-space:nowrap">{{ book.added_at[:10] }}</td>
     <td>
       <div class="d-flex gap-1 justify-content-end">
-        <a href="/books/{{ book.id }}/edit" class="btn btn-xs btn-outline-secondary" title="Edit">
-          <i class="bi bi-pencil"></i>
-        </a>
-        <a href="/api/download/{{ book.id }}" class="btn btn-xs btn-outline-primary" title="Download" download>
-          <i class="bi bi-download"></i>
-        </a>
-        <button class="btn btn-xs btn-outline-danger" title="Delete"
+        <a href="/books/{{ book.id }}/edit" class="btn btn-xs btn-outline-secondary"
+          title="{{ ui.btn_edit }}"><i class="bi bi-pencil"></i></a>
+        <a href="/api/download/{{ book.id }}" class="btn btn-xs btn-outline-primary"
+          title="{{ ui.btn_download }}" download><i class="bi bi-download"></i></a>
+        <button class="btn btn-xs btn-outline-danger" title="{{ ui.btn_delete }}"
           onclick="deleteBook('{{ book.id }}', '{{ book.title|replace("'", "\\'") }}')">
           <i class="bi bi-trash"></i>
         </button>
@@ -120,7 +118,7 @@
 {% else %}
 <div class="empty-state">
   <i class="bi bi-inbox"></i>
-  <p>No books found. <a href="/upload">Upload some!</a></p>
+  <p>{{ ui.no_books_found }} <a href="/upload">{{ ui.upload_prompt }}</a></p>
 </div>
 {% endif %}
 {% endblock %}
