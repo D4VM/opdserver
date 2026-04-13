@@ -1,12 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Authors — OPD Server{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center mb-3">
-  <h5 class="mb-0 me-auto"><i class="bi bi-people me-2"></i>Authors <span class="badge bg-secondary">{{ authors | length }}</span></h5>
+<div class="page-header">
+  <h1 class="page-title">
+    <i class="bi bi-people-fill"></i>Authors
+    <span class="badge bg-secondary ms-1" style="font-size:.65rem;vertical-align:middle">{{ authors | length }}</span>
+  </h1>
 </div>
 
 {% if authors %}
-<div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-3">
+<div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
   {% for a in authors %}
   <div class="col">
     <a href="/authors/{{ a.author | urlencode }}" class="text-decoration-none">
@@ -19,9 +22,12 @@
           <div class="browse-card-placeholder"><i class="bi bi-person-circle"></i></div>
           {% endif %}
         </div>
-        <div class="card-body p-2 text-center">
-          <div class="fw-semibold small text-dark text-truncate" title="{{ a.author }}">{{ a.author }}</div>
-          <div class="text-muted" style="font-size:.75rem">{{ a.book_count }} book{{ 's' if a.book_count != 1 else '' }}</div>
+        <div class="card-body text-center">
+          <div class="fw-semibold small text-truncate" style="color:var(--text)"
+            title="{{ a.author }}">{{ a.author }}</div>
+          <div class="text-subtle" style="font-size:.72rem">
+            {{ a.book_count }} book{{ 's' if a.book_count != 1 else '' }}
+          </div>
         </div>
       </div>
     </a>
@@ -29,9 +35,9 @@
   {% endfor %}
 </div>
 {% else %}
-<div class="text-center text-muted py-5">
-  <i class="bi bi-person-circle display-4"></i>
-  <p class="mt-2">No authors yet. <a href="/upload">Upload some books!</a></p>
+<div class="empty-state">
+  <i class="bi bi-person-circle"></i>
+  <p>No authors yet. <a href="/upload">Upload some books!</a></p>
 </div>
 {% endif %}
 {% endblock %}

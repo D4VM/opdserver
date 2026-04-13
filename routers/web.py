@@ -37,6 +37,8 @@ async def books_page(
     tags = await database.get_tags(db)
     pages = (total + config.PAGE_SIZE - 1) // config.PAGE_SIZE
 
+    tag_map = await database.get_book_tags_map(db, [b.id for b in books])
+
     return templates.TemplateResponse(
         "books.html",
         {
@@ -49,6 +51,7 @@ async def books_page(
             "q": q,
             "tag": tag,
             "page_size": config.PAGE_SIZE,
+            "tag_map": tag_map,
         },
     )
 

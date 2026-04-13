@@ -1,48 +1,51 @@
 {% extends "base.html" %}
 {% block title %}Library — OPD Server{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center mb-3 gap-2 flex-wrap">
-  <h4 class="mb-0 me-auto"><i class="bi bi-collection me-2"></i>Library <span class="badge bg-secondary">{{ total }}</span></h4>
-  <a href="/upload" class="btn btn-primary btn-sm"><i class="bi bi-cloud-upload me-1"></i>Upload</a>
+<div class="page-header">
+  <h1 class="page-title">
+    <i class="bi bi-collection-fill"></i>
+    Library
+    <span class="badge bg-secondary ms-1" style="font-size:.65rem;vertical-align:middle">{{ total }}</span>
+  </h1>
+  <a href="/upload" class="btn btn-primary btn-sm ms-auto">
+    <i class="bi bi-cloud-upload me-1"></i>Upload
+  </a>
 </div>
 
-<form class="row g-2 mb-3" method="get" action="/books">
-  <div class="col-auto flex-grow-1">
-    <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search title or author…">
-  </div>
-  <div class="col-auto">
-    <select name="tag" class="form-select form-select-sm">
-      <option value="">All tags</option>
-      {% for t in tags %}
-      <option value="{{ t.name }}" {% if tag == t.name %}selected{% endif %}>{{ t.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-auto">
-    <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-search"></i></button>
-    {% if q or tag %}
-    <a href="/books" class="btn btn-outline-danger btn-sm"><i class="bi bi-x"></i></a>
-    {% endif %}
-  </div>
+<form class="d-flex gap-2 mb-3 flex-wrap" method="get" action="/books">
+  <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
+    style="max-width:280px" placeholder="Search title, author, series…">
+  <select name="tag" class="form-select form-select-sm" style="max-width:180px">
+    <option value="">All tags</option>
+    {% for t in tags %}
+    <option value="{{ t.name }}" {% if tag == t.name %}selected{% endif %}>{{ t.name }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-search"></i></button>
+  {% if q or tag %}
+  <a href="/books" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-lg"></i></a>
+  {% endif %}
 </form>
 
 {% if books %}
 <div class="table-responsive">
-<table class="table table-hover align-middle table-sm">
-  <thead class="table-dark">
+<table class="table table-hover">
+  <thead>
     <tr>
-      <th style="width:50px"></th>
+      <th style="width:46px"></th>
       <th>Title</th>
       <th>Author</th>
       <th>Format</th>
       <th>Series</th>
-    <th>Tags</th>
+      <th>Tags</th>
       <th>Added</th>
-      <th></th>
+      <th style="width:108px"></th>
     </tr>
   </thead>
   <tbody>
   {% for book in books %}
+  {% set book_tags = tag_map.get(book.id, []) %}
+  {% set extra_tags = (book_tags | length) - 3 %}
   <tr>
     <td>
       {% if book.cover_path %}
@@ -51,28 +54,50 @@
       <div class="book-thumb-placeholder"><i class="bi bi-book"></i></div>
       {% endif %}
     </td>
-    <td><a href="/books/{{ book.id }}/edit" class="text-decoration-none fw-semibold">{{ book.title }}</a></td>
+    <td>
+      <a href="/books/{{ book.id }}/edit" class="fw-semibold text-decoration-none"
+        style="color:var(--text)">{{ book.title }}</a>
+    </td>
     <td class="text-muted">
       {% if book.author %}
-      <a href="/authors/{{ book.author | urlencode }}" class="text-decoration-none text-muted">{{ book.author }}</a>
-      {% else %}—{% endif %}
+      <a href="/authors/{{ book.author | urlencode }}"
+        class="text-decoration-none text-muted">{{ book.author }}</a>
+      {% else %}<span class="text-subtle">—</span>{% endif %}
     </td>
-    <td><span class="badge bg-secondary text-uppercase">{{ book.format }}</span></td>
-    <td class="text-muted small">
+    <td>
+      <span class="fmt-badge fmt-{{ book.format }}">{{ book.format }}</span>
+    </td>
+    <td class="text-muted" style="font-size:.82rem">
       {% if book.series %}
       <a href="/series/{{ book.series | urlencode }}" class="text-decoration-none text-muted">
         {{ book.series }}{% if book.series_index %} #{{ book.series_index | int if book.series_index == (book.series_index | int) else book.series_index }}{% endif %}
       </a>
-      {% else %}—{% endif %}
+      {% else %}<span class="text-subtle">—</span>{% endif %}
     </td>
     <td>
-      <span class="text-muted small" id="tag-count-{{ book.id }}"></span>
+      <div class="d-flex flex-wrap gap-1">
+        {% for t in book_tags[:3] %}
+        <a href="/books?tag={{ t | urlencode }}" class="tag-pill">{{ t }}</a>
+        {% endfor %}
+        {% if extra_tags > 0 %}
+        <span class="tag-overflow">+{{ extra_tags }}</span>
+        {% endif %}
+      </div>
     </td>
-    <td class="text-muted small">{{ book.added_at[:10] }}</td>
-    <td class="text-end">
-      <a href="/books/{{ book.id }}/edit" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
-      <a href="/api/download/{{ book.id }}" class="btn btn-sm btn-outline-primary" title="Download" download><i class="bi bi-download"></i></a>
-      <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="deleteBook('{{ book.id }}', '{{ book.title|replace("'", "\\'") }}')"><i class="bi bi-trash"></i></button>
+    <td class="text-muted" style="font-size:.78rem;white-space:nowrap">{{ book.added_at[:10] }}</td>
+    <td>
+      <div class="d-flex gap-1 justify-content-end">
+        <a href="/books/{{ book.id }}/edit" class="btn btn-xs btn-outline-secondary" title="Edit">
+          <i class="bi bi-pencil"></i>
+        </a>
+        <a href="/api/download/{{ book.id }}" class="btn btn-xs btn-outline-primary" title="Download" download>
+          <i class="bi bi-download"></i>
+        </a>
+        <button class="btn btn-xs btn-outline-danger" title="Delete"
+          onclick="deleteBook('{{ book.id }}', '{{ book.title|replace("'", "\\'") }}')">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
     </td>
   </tr>
   {% endfor %}
@@ -81,7 +106,7 @@
 </div>
 
 {% if pages > 1 %}
-<nav>
+<nav class="mt-3">
   <ul class="pagination pagination-sm justify-content-center">
     {% for p in range(pages) %}
     <li class="page-item {% if p == page %}active{% endif %}">
@@ -93,9 +118,9 @@
 {% endif %}
 
 {% else %}
-<div class="text-center text-muted py-5">
-  <i class="bi bi-inbox display-4"></i>
-  <p class="mt-2">No books found. <a href="/upload">Upload some!</a></p>
+<div class="empty-state">
+  <i class="bi bi-inbox"></i>
+  <p>No books found. <a href="/upload">Upload some!</a></p>
 </div>
 {% endif %}
 {% endblock %}

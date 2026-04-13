@@ -1,99 +1,116 @@
 {% extends "base.html" %}
 {% block title %}Edit: {{ book.title }}{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center mb-3 gap-2">
+<div class="page-header">
   <a href="/books" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
-  <h5 class="mb-0">Edit Book</h5>
+  <h1 class="page-title">Edit Book</h1>
 </div>
 
 <div class="row g-4">
   <!-- Cover column -->
-  <div class="col-md-3 text-center">
-    {% if book.cover_path %}
-    <img src="/covers/{{ book.id }}.jpg" class="img-fluid rounded shadow mb-3" id="cover-preview" alt="Cover">
-    {% else %}
-    <div class="cover-placeholder mb-3" id="cover-placeholder"><i class="bi bi-book display-1 text-muted"></i></div>
-    <img src="" class="img-fluid rounded shadow mb-3 d-none" id="cover-preview" alt="Cover">
-    {% endif %}
-    <label class="btn btn-outline-secondary btn-sm w-100">
+  <div class="col-md-3">
+    <div class="cover-wrap mb-3" id="cover-frame">
+      {% if book.cover_path %}
+      <img src="/covers/{{ book.id }}.jpg" id="cover-preview" alt="Cover">
+      {% else %}
+      <div class="cover-empty" id="cover-placeholder">
+        <i class="bi bi-book"></i>
+        <span>No cover</span>
+      </div>
+      <img src="" id="cover-preview" class="d-none" alt="Cover">
+      {% endif %}
+    </div>
+    <label class="btn btn-outline-secondary btn-sm w-100 mb-2">
       <i class="bi bi-image me-1"></i>Replace Cover
       <input type="file" id="cover-input" accept="image/*" class="d-none">
     </label>
-    <div class="mt-2">
-      <a href="/api/download/{{ book.id }}" class="btn btn-primary btn-sm w-100" download>
-        <i class="bi bi-download me-1"></i>Download {{ book.format|upper }}
-      </a>
-    </div>
+    <a href="/api/download/{{ book.id }}" class="btn btn-primary btn-sm w-100" download>
+      <i class="bi bi-download me-1"></i>Download {{ book.format | upper }}
+    </a>
   </div>
 
   <!-- Metadata form -->
   <div class="col-md-9">
     <div class="card">
+      <div class="card-header"><i class="bi bi-pencil-square me-1"></i>Metadata</div>
       <div class="card-body">
         <form id="edit-form">
           <div class="row g-3">
             <div class="col-12">
-              <label class="form-label fw-semibold">Title</label>
+              <label class="form-label">Title</label>
               <input type="text" class="form-control" name="title" value="{{ book.title }}">
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-semibold">Author</label>
+              <label class="form-label">Author</label>
               <input type="text" class="form-control" name="author" value="{{ book.author or '' }}">
             </div>
             <div class="col-md-3">
-              <label class="form-label fw-semibold">Language</label>
-              <input type="text" class="form-control" name="language" value="{{ book.language or 'en' }}" maxlength="10">
+              <label class="form-label">Language</label>
+              <input type="text" class="form-control" name="language"
+                value="{{ book.language or 'en' }}" maxlength="10">
             </div>
             <div class="col-md-3">
-              <label class="form-label fw-semibold">Published</label>
-              <input type="text" class="form-control" name="published" value="{{ book.published or '' }}" placeholder="YYYY-MM-DD">
+              <label class="form-label">Published</label>
+              <input type="text" class="form-control" name="published"
+                value="{{ book.published or '' }}" placeholder="YYYY-MM-DD">
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-semibold">Publisher</label>
-              <input type="text" class="form-control" name="publisher" value="{{ book.publisher or '' }}">
+              <label class="form-label">Publisher</label>
+              <input type="text" class="form-control" name="publisher"
+                value="{{ book.publisher or '' }}">
             </div>
             <div class="col-md-9">
-              <label class="form-label fw-semibold">Series</label>
-              <input type="text" class="form-control" name="series" value="{{ book.series or '' }}" placeholder="e.g. The Lord of the Rings">
+              <label class="form-label">Series</label>
+              <input type="text" class="form-control" name="series"
+                value="{{ book.series or '' }}" placeholder="e.g. The Lord of the Rings">
             </div>
             <div class="col-md-3">
-              <label class="form-label fw-semibold">Series #</label>
-              <input type="number" class="form-control" name="series_index" value="{{ book.series_index if book.series_index is not none else '' }}" step="0.1" min="0" placeholder="e.g. 1">
+              <label class="form-label">Series #</label>
+              <input type="number" class="form-control" name="series_index"
+                value="{{ book.series_index if book.series_index is not none else '' }}"
+                step="0.1" min="0" placeholder="1">
             </div>
             <div class="col-12">
-              <label class="form-label fw-semibold">Description</label>
+              <label class="form-label">Description</label>
               <textarea class="form-control" name="description" rows="4">{{ book.description or '' }}</textarea>
             </div>
           </div>
 
           <div class="form-check mt-3">
-            <input class="form-check-input" type="checkbox" id="write-to-file" {% if book.format == 'epub' %}{% else %}disabled{% endif %}>
-            <label class="form-check-label" for="write-to-file">
+            <input class="form-check-input" type="checkbox" id="write-to-file"
+              {% if book.format != 'epub' %}disabled{% endif %}>
+            <label class="form-check-label small" for="write-to-file">
               Write metadata back to EPUB file
-              {% if book.format != 'epub' %}<span class="text-muted">(only supported for EPUB)</span>{% endif %}
+              {% if book.format != 'epub' %}
+              <span class="text-muted">(EPUB only)</span>
+              {% endif %}
             </label>
           </div>
 
-          <div class="mt-3 d-flex gap-2">
-            <button type="submit" class="btn btn-success"><i class="bi bi-check2 me-1"></i>Save</button>
-            <button type="button" class="btn btn-outline-info" id="search-meta-btn" data-bs-toggle="modal" data-bs-target="#metaSearchModal">
+          <div class="d-flex gap-2 mt-3 align-items-center">
+            <button type="submit" class="btn btn-success btn-sm">
+              <i class="bi bi-check2 me-1"></i>Save
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm"
+              data-bs-toggle="modal" data-bs-target="#metaSearchModal">
               <i class="bi bi-search me-1"></i>Search Metadata
             </button>
+            <span id="save-status" class="ms-2 small"></span>
           </div>
-          <div id="save-status" class="mt-2"></div>
         </form>
       </div>
     </div>
 
     <!-- Tags -->
     <div class="card mt-3">
-      <div class="card-header fw-semibold"><i class="bi bi-tags me-1"></i>Tags</div>
+      <div class="card-header"><i class="bi bi-tags-fill me-1"></i>Tags</div>
       <div class="card-body">
-        <div id="book-tags" class="mb-2 d-flex flex-wrap gap-1">
+        <div id="book-tags" class="mb-2 d-flex flex-wrap gap-1" style="min-height:1.5rem">
           {% for t in book_tags %}
           <span class="badge bg-primary d-flex align-items-center gap-1" id="bt-{{ t.id }}">
             {{ t.name }}
-            <button type="button" class="btn-close btn-close-white btn-sm" style="font-size:.6rem" onclick="removeTag({{ t.id }}, '{{ book.id }}')"></button>
+            <button type="button" class="btn-close btn-close-white btn-sm"
+              style="font-size:.55rem" onclick="removeTag({{ t.id }}, '{{ book.id }}')"></button>
           </span>
           {% endfor %}
         </div>
@@ -125,9 +142,13 @@
       </div>
       <div class="modal-body">
         <div class="input-group mb-3">
-          <input type="text" class="form-control" id="meta-query" placeholder="Title…" value="{{ book.title }}">
-          <input type="text" class="form-control" id="meta-author" placeholder="Author…" value="{{ book.author or '' }}">
-          <button class="btn btn-primary" onclick="searchMetadata('{{ book.id }}')"><i class="bi bi-search"></i> Search</button>
+          <input type="text" class="form-control" id="meta-query"
+            placeholder="Title…" value="{{ book.title }}">
+          <input type="text" class="form-control" id="meta-author"
+            placeholder="Author…" value="{{ book.author or '' }}">
+          <button class="btn btn-primary" onclick="searchMetadata('{{ book.id }}')">
+            <i class="bi bi-search me-1"></i>Search
+          </button>
         </div>
         <div id="meta-results"></div>
       </div>
@@ -207,7 +228,7 @@ function appendTagBadge(tagId, tagName, bookId) {
   const span = document.createElement('span');
   span.className = 'badge bg-primary d-flex align-items-center gap-1';
   span.id = `bt-${tagId}`;
-  span.innerHTML = `${tagName} <button type="button" class="btn-close btn-close-white btn-sm" style="font-size:.6rem" onclick="removeTag(${tagId},'${bookId}')"></button>`;
+  span.innerHTML = `${tagName} <button type="button" class="btn-close btn-close-white btn-sm" style="font-size:.55rem" onclick="removeTag(${tagId},'${bookId}')"></button>`;
   container.appendChild(span);
 }
 
@@ -215,28 +236,35 @@ function appendTagBadge(tagId, tagName, bookId) {
 async function searchMetadata(bookId) {
   const q = document.getElementById('meta-query').value;
   const author = document.getElementById('meta-author').value;
-  document.getElementById('meta-results').innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Searching…</div>';
+  document.getElementById('meta-results').innerHTML =
+    '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Searching…</div>';
   const resp = await fetch(`/api/books/${bookId}/metadata/search?q=${encodeURIComponent(q)}&author=${encodeURIComponent(author)}`);
   const results = await resp.json();
   if (!results.length) {
-    document.getElementById('meta-results').innerHTML = '<p class="text-muted text-center">No results found.</p>';
+    document.getElementById('meta-results').innerHTML = '<p class="text-muted text-center py-3">No results found.</p>';
     return;
   }
   const html = results.map((r, i) => `
-    <div class="card mb-2">
-      <div class="card-body p-3 d-flex gap-3">
-        ${r.cover_url ? `<img src="${r.cover_url}" style="width:60px;height:80px;object-fit:cover;border-radius:4px" onerror="this.style.display='none'">` : '<div style="width:60px;height:80px;background:#eee;border-radius:4px;display:flex;align-items:center;justify-content:center"><i class="bi bi-book text-muted"></i></div>'}
-        <div class="flex-grow-1">
-          <div class="fw-semibold">${r.title || ''}</div>
-          <div class="text-muted small">${r.author || ''} ${r.published ? '· ' + r.published.slice(0,4) : ''}</div>
-          <div class="text-muted small">${r.publisher || ''} <span class="badge bg-light text-dark border">${r.source}</span></div>
-          ${r.description ? `<div class="small mt-1 text-muted" style="max-height:3em;overflow:hidden">${r.description}</div>` : ''}
-          ${r.series ? `<div class="small mt-1 text-info"><i class="bi bi-journals me-1"></i>${r.series}${r.series_index ? ' #' + r.series_index : ''}</div>` : ''}
-          ${r.tags.length ? `<div class="mt-1">${r.tags.map(t=>`<span class="badge bg-secondary me-1">${t}</span>`).join('')}</div>` : ''}
+    <div class="d-flex gap-3 p-3 mb-2 rounded border bg-white" style="border-color:var(--border)!important">
+      ${r.cover_url
+        ? `<img src="${r.cover_url}" style="width:56px;height:76px;object-fit:cover;border-radius:4px;flex-shrink:0" onerror="this.style.display='none'">`
+        : `<div style="width:56px;height:76px;background:#e8ecf0;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center"><i class="bi bi-book text-muted"></i></div>`
+      }
+      <div class="flex-grow-1 min-w-0">
+        <div class="fw-semibold" style="font-size:.9rem">${r.title || ''}</div>
+        <div class="text-muted small">${r.author || ''} ${r.published ? '· ' + r.published.slice(0,4) : ''}</div>
+        <div class="small mt-1">
+          ${r.publisher ? `<span class="text-muted">${r.publisher}</span> ` : ''}
+          <span class="fmt-badge fmt-${r.source.toLowerCase().replace(/\s+/g,'')}" style="background:#f0f2f5;color:#6e7789">${r.source}</span>
         </div>
-        <div>
-          <button class="btn btn-sm btn-success" onclick="applyMetadata(${i})"><i class="bi bi-check2-all me-1"></i>Apply</button>
-        </div>
+        ${r.description ? `<div class="small text-muted mt-1" style="max-height:2.8em;overflow:hidden;line-height:1.4">${r.description}</div>` : ''}
+        ${r.series ? `<div class="small mt-1" style="color:var(--accent)"><i class="bi bi-journals me-1"></i>${r.series}${r.series_index ? ' #'+r.series_index : ''}</div>` : ''}
+        ${r.tags.length ? `<div class="mt-1 d-flex flex-wrap gap-1">${r.tags.map(t=>`<span class="tag-pill">${t}</span>`).join('')}</div>` : ''}
+      </div>
+      <div class="flex-shrink-0">
+        <button class="btn btn-sm btn-success" onclick="applyMetadata(${i})">
+          <i class="bi bi-check2-all me-1"></i>Apply
+        </button>
       </div>
     </div>
   `).join('');
@@ -254,9 +282,9 @@ async function applyMetadata(idx) {
   if (r.publisher)   params.append('publisher', r.publisher);
   if (r.published)   params.append('published', r.published);
   if (r.language)    params.append('language', r.language);
-  if (r.cover_url)        params.append('cover_url', r.cover_url);
-  if (r.tags.length)      params.append('tags', r.tags.join(','));
-  if (r.series)           params.append('series', r.series);
+  if (r.cover_url)   params.append('cover_url', r.cover_url);
+  if (r.tags.length) params.append('tags', r.tags.join(','));
+  if (r.series)      params.append('series', r.series);
   if (r.series_index != null) params.append('series_index', r.series_index);
   if (writeToFile)   params.append('write_to_file', 'true');
 

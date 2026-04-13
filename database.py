@@ -245,3 +245,22 @@ async def remove_book_tag(db: aiosqlite.Connection, book_id: str, tag_id: int) -
         "DELETE FROM book_tags WHERE book_id = ? AND tag_id = ?", [book_id, tag_id]
     )
     await db.commit()
+
+
+async def get_book_tags_map(
+    db: aiosqlite.Connection, book_ids: list[str]
+) -> dict[str, list[str]]:
+    """Return {book_id: [tag_name, ...]} for a list of book IDs in one query."""
+    if not book_ids:
+        return {}
+    placeholders = ",".join("?" * len(book_ids))
+    rows = await db.execute_fetchall(
+        f"SELECT bt.book_id, t.name FROM book_tags bt "
+        f"JOIN tags t ON bt.tag_id = t.id "
+        f"WHERE bt.book_id IN ({placeholders}) ORDER BY t.name",
+        book_ids,
+    )
+    result: dict[str, list[str]] = {}
+    for row in rows:
+        result.setdefault(row["book_id"], []).append(row["name"])
+    return result

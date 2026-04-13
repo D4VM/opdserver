@@ -1,31 +1,49 @@
 {% extends "base.html" %}
 {% block title %}Tags — OPD Server{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center mb-3 gap-2">
-  <h5 class="mb-0 me-auto"><i class="bi bi-tags me-2"></i>Tags</h5>
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-tags-fill"></i>Tags</h1>
 </div>
 
 <div class="row">
-  <div class="col-md-6">
-    <div class="input-group mb-3">
+  <div class="col-md-6 col-lg-5">
+    <div class="input-group input-group-sm mb-3">
       <input type="text" class="form-control" id="new-tag" placeholder="New tag name…">
-      <button class="btn btn-primary" onclick="createTag()"><i class="bi bi-plus-lg me-1"></i>Create</button>
+      <button class="btn btn-primary" onclick="createTag()">
+        <i class="bi bi-plus-lg me-1"></i>Create
+      </button>
     </div>
 
-    <ul class="list-group" id="tag-list">
-    {% for t in tags %}
-    <li class="list-group-item d-flex align-items-center gap-2" id="tag-{{ t.id }}">
-      <span class="flex-grow-1 tag-name-display">{{ t.name }}</span>
-      <input type="text" class="form-control form-control-sm flex-grow-1 d-none tag-name-input" value="{{ t.name }}">
-      <a href="/books?tag={{ t.name }}" class="btn btn-sm btn-outline-secondary" title="View books"><i class="bi bi-collection"></i></a>
-      <button class="btn btn-sm btn-outline-secondary edit-btn" onclick="startEdit({{ t.id }})"><i class="bi bi-pencil"></i></button>
-      <button class="btn btn-sm btn-success save-btn d-none" onclick="saveTag({{ t.id }})"><i class="bi bi-check2"></i></button>
-      <button class="btn btn-sm btn-outline-danger" onclick="deleteTag({{ t.id }})"><i class="bi bi-trash"></i></button>
-    </li>
-    {% endfor %}
-    </ul>
-    {% if not tags %}
-    <p class="text-muted text-center py-3">No tags yet.</p>
+    {% if tags %}
+    <div class="card">
+      <ul class="list-group list-group-flush" id="tag-list">
+      {% for t in tags %}
+      <li class="list-group-item d-flex align-items-center gap-2 px-3" id="tag-{{ t.id }}"
+        style="border-color:var(--border-light)">
+        <span class="flex-grow-1 tag-name-display small fw-semibold">{{ t.name }}</span>
+        <input type="text" class="form-control form-control-sm flex-grow-1 d-none tag-name-input"
+          value="{{ t.name }}">
+        <a href="/books?tag={{ t.name }}" class="btn btn-xs btn-outline-secondary" title="View books">
+          <i class="bi bi-collection"></i>
+        </a>
+        <button class="btn btn-xs btn-outline-secondary edit-btn" onclick="startEdit({{ t.id }})">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn btn-xs btn-success save-btn d-none" onclick="saveTag({{ t.id }})">
+          <i class="bi bi-check2"></i>
+        </button>
+        <button class="btn btn-xs btn-outline-danger" onclick="deleteTag({{ t.id }})">
+          <i class="bi bi-trash"></i>
+        </button>
+      </li>
+      {% endfor %}
+      </ul>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:2.5rem 1rem">
+      <i class="bi bi-tags"></i>
+      <p>No tags yet.</p>
+    </div>
     {% endif %}
   </div>
 </div>
@@ -40,17 +58,28 @@ async function createTag() {
   const resp = await fetch(`/api/tags?name=${encodeURIComponent(name)}`, { method: 'POST' });
   const tag = await resp.json();
   input.value = '';
+
+  let list = document.getElementById('tag-list');
+  if (!list) {
+    // First tag — rebuild the container
+    const col = document.querySelector('.col-md-6');
+    col.insertAdjacentHTML('beforeend', '<div class="card"><ul class="list-group list-group-flush" id="tag-list"></ul></div>');
+    col.querySelector('.empty-state')?.remove();
+    list = document.getElementById('tag-list');
+  }
+
   const li = document.createElement('li');
-  li.className = 'list-group-item d-flex align-items-center gap-2';
+  li.className = 'list-group-item d-flex align-items-center gap-2 px-3';
   li.id = `tag-${tag.id}`;
+  li.style.borderColor = 'var(--border-light)';
   li.innerHTML = `
-    <span class="flex-grow-1 tag-name-display">${tag.name}</span>
+    <span class="flex-grow-1 tag-name-display small fw-semibold">${tag.name}</span>
     <input type="text" class="form-control form-control-sm flex-grow-1 d-none tag-name-input" value="${tag.name}">
-    <a href="/books?tag=${encodeURIComponent(tag.name)}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-collection"></i></a>
-    <button class="btn btn-sm btn-outline-secondary edit-btn" onclick="startEdit(${tag.id})"><i class="bi bi-pencil"></i></button>
-    <button class="btn btn-sm btn-success save-btn d-none" onclick="saveTag(${tag.id})"><i class="bi bi-check2"></i></button>
-    <button class="btn btn-sm btn-outline-danger" onclick="deleteTag(${tag.id})"><i class="bi bi-trash"></i></button>`;
-  document.getElementById('tag-list').appendChild(li);
+    <a href="/books?tag=${encodeURIComponent(tag.name)}" class="btn btn-xs btn-outline-secondary" title="View books"><i class="bi bi-collection"></i></a>
+    <button class="btn btn-xs btn-outline-secondary edit-btn" onclick="startEdit(${tag.id})"><i class="bi bi-pencil"></i></button>
+    <button class="btn btn-xs btn-success save-btn d-none" onclick="saveTag(${tag.id})"><i class="bi bi-check2"></i></button>
+    <button class="btn btn-xs btn-outline-danger" onclick="deleteTag(${tag.id})"><i class="bi bi-trash"></i></button>`;
+  list.appendChild(li);
 }
 
 function startEdit(tagId) {
@@ -59,6 +88,7 @@ function startEdit(tagId) {
   li.querySelector('.tag-name-input').classList.remove('d-none');
   li.querySelector('.edit-btn').classList.add('d-none');
   li.querySelector('.save-btn').classList.remove('d-none');
+  li.querySelector('.tag-name-input').focus();
 }
 
 async function saveTag(tagId) {
@@ -76,7 +106,11 @@ async function saveTag(tagId) {
 async function deleteTag(tagId) {
   if (!confirm('Delete this tag? It will be removed from all books.')) return;
   await fetch(`/api/tags/${tagId}`, { method: 'DELETE' });
-  document.getElementById(`tag-${tagId}`)?.remove();
+  const li = document.getElementById(`tag-${tagId}`);
+  li?.remove();
+  if (!document.querySelector('#tag-list li')) {
+    document.querySelector('.card')?.remove();
+  }
 }
 </script>
 {% endblock %}

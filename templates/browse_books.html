@@ -1,25 +1,27 @@
 {% extends "base.html" %}
 {% block title %}{{ browse_title }} — OPD Server{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center mb-3 gap-2">
-  <a href="{{ back_url }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> {{ back_label }}</a>
+<div class="page-header">
+  <a href="{{ back_url }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>{{ back_label }}
+  </a>
   <div>
-    <h5 class="mb-0">{{ browse_title }}</h5>
-    <div class="text-muted small">{{ browse_subtitle }}</div>
+    <h1 class="page-title mb-0">{{ browse_title }}</h1>
+    <div class="text-muted small mt-1">{{ browse_subtitle }}</div>
   </div>
 </div>
 
 {% if books %}
 <div class="table-responsive">
-<table class="table table-hover align-middle table-sm">
-  <thead class="table-dark">
+<table class="table table-hover">
+  <thead>
     <tr>
-      <th style="width:50px"></th>
+      <th style="width:46px"></th>
       <th>Title</th>
       {% if not show_series_index %}<th>Author</th>{% endif %}
       <th>Format</th>
       <th>Published</th>
-      <th></th>
+      <th style="width:108px"></th>
     </tr>
   </thead>
   <tbody>
@@ -33,19 +35,33 @@
       {% endif %}
     </td>
     <td>
-      <a href="/books/{{ book.id }}/edit" class="text-decoration-none fw-semibold">
-        {% if show_series_index and book.series_index is not none %}[{{ book.series_index | int if book.series_index == (book.series_index | int) else book.series_index }}] {% endif %}{{ book.title }}
+      <a href="/books/{{ book.id }}/edit" class="fw-semibold text-decoration-none" style="color:var(--text)">
+        {% if show_series_index and book.series_index is not none %}
+        <span class="text-subtle me-1">[{{ book.series_index | int if book.series_index == (book.series_index | int) else book.series_index }}]</span>
+        {% endif %}
+        {{ book.title }}
       </a>
     </td>
     {% if not show_series_index %}
     <td class="text-muted">{{ book.author or '—' }}</td>
     {% endif %}
-    <td><span class="badge bg-secondary text-uppercase">{{ book.format }}</span></td>
-    <td class="text-muted small">{{ (book.published or '')[:4] or '—' }}</td>
-    <td class="text-end">
-      <a href="/books/{{ book.id }}/edit" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
-      <a href="/api/download/{{ book.id }}" class="btn btn-sm btn-outline-primary" title="Download" download><i class="bi bi-download"></i></a>
-      <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="deleteBook('{{ book.id }}', '{{ book.title|replace("'", "\\'") }}')"><i class="bi bi-trash"></i></button>
+    <td>
+      <span class="fmt-badge fmt-{{ book.format }}">{{ book.format }}</span>
+    </td>
+    <td class="text-muted" style="font-size:.82rem">{{ (book.published or '')[:4] or '—' }}</td>
+    <td>
+      <div class="d-flex gap-1 justify-content-end">
+        <a href="/books/{{ book.id }}/edit" class="btn btn-xs btn-outline-secondary" title="Edit">
+          <i class="bi bi-pencil"></i>
+        </a>
+        <a href="/api/download/{{ book.id }}" class="btn btn-xs btn-outline-primary" title="Download" download>
+          <i class="bi bi-download"></i>
+        </a>
+        <button class="btn btn-xs btn-outline-danger" title="Delete"
+          onclick="deleteBook('{{ book.id }}', '{{ book.title|replace("'", "\\'") }}')">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
     </td>
   </tr>
   {% endfor %}
@@ -54,7 +70,7 @@
 </div>
 
 {% if pages > 1 %}
-<nav>
+<nav class="mt-3">
   <ul class="pagination pagination-sm justify-content-center">
     {% for p in range(pages) %}
     <li class="page-item {% if p == page %}active{% endif %}">
@@ -64,10 +80,11 @@
   </ul>
 </nav>
 {% endif %}
+
 {% else %}
-<div class="text-center text-muted py-5">
-  <i class="bi bi-inbox display-4"></i>
-  <p class="mt-2">No books here yet.</p>
+<div class="empty-state">
+  <i class="bi bi-inbox"></i>
+  <p>No books here yet.</p>
 </div>
 {% endif %}
 {% endblock %}

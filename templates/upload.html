@@ -1,20 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Upload — OPD Server{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center mb-3">
-  <a href="/books" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-arrow-left"></i></a>
-  <h5 class="mb-0"><i class="bi bi-cloud-upload me-2"></i>Upload Books</h5>
+<div class="page-header">
+  <a href="/books" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h1 class="page-title"><i class="bi bi-cloud-upload-fill"></i>Upload Books</h1>
 </div>
 
 <div class="row justify-content-center">
-  <div class="col-md-8">
+  <div class="col-md-8 col-lg-6">
     <div id="drop-zone" class="border border-2 border-dashed rounded p-5 text-center mb-4">
       <i class="bi bi-cloud-upload display-4 text-muted"></i>
-      <p class="mt-2 mb-1 fs-5">Drag &amp; drop ebook files here</p>
+      <p class="mt-2 mb-1 fs-5 fw-semibold">Drag &amp; drop ebook files here</p>
       <p class="text-muted small mb-3">Supported: EPUB, PDF, MOBI, AZW, CBZ, FB2</p>
       <label class="btn btn-primary">
         <i class="bi bi-folder2-open me-1"></i>Browse Files
-        <input type="file" id="file-input" multiple accept=".epub,.pdf,.mobi,.azw,.azw3,.cbz,.fb2,.txt" class="d-none">
+        <input type="file" id="file-input" multiple
+          accept=".epub,.pdf,.mobi,.azw,.azw3,.cbz,.fb2,.txt" class="d-none">
       </label>
     </div>
 
@@ -28,14 +29,14 @@
 <script>
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
-const queue = document.getElementById('upload-queue');
-const results = document.getElementById('upload-results');
+const queue     = document.getElementById('upload-queue');
+const results   = document.getElementById('upload-results');
 
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-primary'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-primary'));
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
 dropZone.addEventListener('drop', e => {
   e.preventDefault();
-  dropZone.classList.remove('border-primary');
+  dropZone.classList.remove('drag-over');
   uploadFiles(e.dataTransfer.files);
 });
 fileInput.addEventListener('change', () => uploadFiles(fileInput.files));
@@ -45,15 +46,14 @@ async function uploadFiles(files) {
   const fd = new FormData();
   for (const f of files) fd.append('files', f);
 
-  // Show progress
   const progressId = 'prog-' + Date.now();
   queue.innerHTML = `
     <div id="${progressId}" class="mb-3">
       <div class="d-flex justify-content-between small mb-1">
-        <span>Uploading ${files.length} file${files.length > 1 ? 's' : ''}…</span>
+        <span class="text-muted">Uploading ${files.length} file${files.length > 1 ? 's' : ''}…</span>
       </div>
-      <div class="progress">
-        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%"></div>
+      <div class="progress" style="height:6px">
+        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width:100%"></div>
       </div>
     </div>`;
 
@@ -71,16 +71,30 @@ async function uploadFiles(files) {
       return `
         <div class="card mb-2">
           <div class="card-body p-3 d-flex align-items-center gap-3">
-            ${r.cover ? `<img src="${r.cover}" style="width:45px;height:60px;object-fit:cover;border-radius:4px">` : '<div style="width:45px;height:60px;background:#eee;border-radius:4px"></div>'}
+            ${r.cover
+              ? `<img src="${r.cover}" style="width:36px;height:50px;object-fit:cover;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.2)">`
+              : `<div style="width:36px;height:50px;background:#e8ecf0;border-radius:3px;display:flex;align-items:center;justify-content:center"><i class="bi bi-book text-muted"></i></div>`
+            }
             <div class="flex-grow-1">
               <div class="fw-semibold">${r.title}</div>
-              <div class="text-muted small">${r.author || 'Unknown author'} · <span class="text-uppercase">${r.format}</span></div>
+              <div class="text-muted small">
+                ${r.author || 'Unknown author'}
+                · <span class="fmt-badge fmt-${r.format}">${r.format}</span>
+              </div>
             </div>
-            <a href="/books/${r.id}/edit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i> Edit</a>
+            <a href="/books/${r.id}/edit" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-pencil me-1"></i>Edit
+            </a>
           </div>
         </div>`;
     }).join('');
-    results.innerHTML = html + `<div class="text-center mt-2"><a href="/books" class="btn btn-success"><i class="bi bi-collection me-1"></i>View Library</a></div>`;
+
+    results.innerHTML = html +
+      `<div class="text-center mt-3">
+        <a href="/books" class="btn btn-success">
+          <i class="bi bi-collection me-1"></i>View Library
+        </a>
+      </div>`;
   } catch {
     document.getElementById(progressId)?.remove();
     results.innerHTML = '<div class="alert alert-danger">Upload failed. Please try again.</div>';

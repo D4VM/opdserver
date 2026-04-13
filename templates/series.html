@@ -1,12 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Series — OPD Server{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center mb-3">
-  <h5 class="mb-0 me-auto"><i class="bi bi-journals me-2"></i>Series <span class="badge bg-secondary">{{ series_list | length }}</span></h5>
+<div class="page-header">
+  <h1 class="page-title">
+    <i class="bi bi-journals"></i>Series
+    <span class="badge bg-secondary ms-1" style="font-size:.65rem;vertical-align:middle">{{ series_list | length }}</span>
+  </h1>
 </div>
 
 {% if series_list %}
-<div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-3">
+<div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
   {% for s in series_list %}
   <div class="col">
     <a href="/series/{{ s.series | urlencode }}" class="text-decoration-none">
@@ -19,9 +22,12 @@
           <div class="browse-card-placeholder"><i class="bi bi-journals"></i></div>
           {% endif %}
         </div>
-        <div class="card-body p-2 text-center">
-          <div class="fw-semibold small text-dark text-truncate" title="{{ s.series }}">{{ s.series }}</div>
-          <div class="text-muted" style="font-size:.75rem">{{ s.book_count }} book{{ 's' if s.book_count != 1 else '' }}</div>
+        <div class="card-body text-center">
+          <div class="fw-semibold small text-truncate" style="color:var(--text)"
+            title="{{ s.series }}">{{ s.series }}</div>
+          <div class="text-subtle" style="font-size:.72rem">
+            {{ s.book_count }} book{{ 's' if s.book_count != 1 else '' }}
+          </div>
         </div>
       </div>
     </a>
@@ -29,9 +35,9 @@
   {% endfor %}
 </div>
 {% else %}
-<div class="text-center text-muted py-5">
-  <i class="bi bi-journals display-4"></i>
-  <p class="mt-2">No series yet. Edit a book to assign it to a series.</p>
+<div class="empty-state">
+  <i class="bi bi-journals"></i>
+  <p>No series yet. Edit a book to assign it to a series.</p>
 </div>
 {% endif %}
 {% endblock %}
