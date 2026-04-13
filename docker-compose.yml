@@ -6,11 +6,12 @@ services:
     environment:
       - BASE_URL=http://localhost:8000   # change to your LAN IP, e.g. http://192.168.1.100:8000
       - SERVER_TITLE=My Library
+      - LOCALE_LANG=en                  # default UI language (en, ru, or any code in locales/)
       - PORT=8000
       - HOST=0.0.0.0
     volumes:
       - ./data/books:/app/books
       - ./data/covers:/app/covers
       - ./data/library.db:/app/library.db
-      - ./data/settings.json:/app/settings.json
+      - ./data/settings.json:/app/settings.json  # created automatically on first run
     restart: unless-stopped

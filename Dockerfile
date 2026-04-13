@@ -17,8 +17,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Runtime data directories (overridden by volume mounts)
-RUN mkdir -p books covers
+RUN mkdir -p books covers && echo '{}' > settings.json && \
+    chmod +x entrypoint.sh
 
 EXPOSE 8000
 
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["python3", "main.py"]
