@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import aiosqlite
@@ -147,7 +147,7 @@ async def settings_page(request: Request):
 
 
 @router.post("/settings/language", response_class=RedirectResponse)
-async def change_language(lang: str = Query(...)):
+async def change_language(lang: str = Form(...)):
     available = {loc["code"] for loc in list_locales()}
     if lang in available:
         set_language(lang)
