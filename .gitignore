@@ -1,4 +1,5 @@
 library.db
+settings.json
 books/
 covers/
 __pycache__/

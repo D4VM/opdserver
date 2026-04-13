@@ -12,4 +12,5 @@ services:
       - ./data/books:/app/books
       - ./data/covers:/app/covers
       - ./data/library.db:/app/library.db
+      - ./data/settings.json:/app/settings.json
     restart: unless-stopped

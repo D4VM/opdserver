@@ -8,12 +8,12 @@ import urllib.parse
 import database
 import config
 from database import get_db
-from ui_strings import load_strings
+from ui_strings import get_active, list_locales, set_language, get_current_lang
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(config.TEMPLATES_DIR))
 templates.env.filters["urlencode"] = urllib.parse.quote
-templates.env.globals["ui"] = load_strings()
+templates.env.globals["ui"] = get_active()          # same dict object, mutated on lang change
 templates.env.globals["SERVER_TITLE"] = config.SERVER_TITLE
 
 
@@ -132,6 +132,26 @@ async def author_books_page(
 async def series_page(request: Request, db: aiosqlite.Connection = Depends(get_db)):
     series_list = await database.get_series_list(db)
     return templates.TemplateResponse("series.html", {"request": request, "series_list": series_list})
+
+
+@router.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    return templates.TemplateResponse(
+        "settings.html",
+        {
+            "request": request,
+            "locales": list_locales(),
+            "current_lang": get_current_lang(),
+        },
+    )
+
+
+@router.post("/settings/language", response_class=RedirectResponse)
+async def change_language(lang: str = Query(...)):
+    available = {loc["code"] for loc in list_locales()}
+    if lang in available:
+        set_language(lang)
+    return RedirectResponse("/settings", status_code=303)
 
 
 @router.get("/series/{series_name}", response_class=HTMLResponse)

@@ -1,5 +1,5 @@
 {
-  "_note": "OPD Server UI strings. Edit values to localize — do NOT change keys. To use a custom file set LOCALE_FILE=/path/to/file.json (or in server.ini: [server] locale_file = ...)",
+  "locale_name": "English",
 
   "nav_library":   "Library",
   "nav_upload":    "Upload",
@@ -7,13 +7,15 @@
   "nav_authors":   "Authors",
   "nav_series":    "Series",
   "nav_opds_feed": "OPDS Feed",
+  "nav_settings":  "Settings",
 
-  "library":     "Library",
+  "library":      "Library",
   "upload_books": "Upload Books",
-  "tags":        "Tags",
-  "authors":     "Authors",
-  "series":      "Series",
-  "edit_book":   "Edit Book",
+  "tags":         "Tags",
+  "authors":      "Authors",
+  "series":       "Series",
+  "edit_book":    "Edit Book",
+  "settings":     "Settings",
 
   "btn_upload":          "Upload",
   "btn_save":            "Save",
@@ -55,17 +57,17 @@
   "write_to_epub": "Write metadata back to EPUB file",
   "epub_only":     "EPUB only",
 
-  "add_existing_tag":      "Add existing tag\u2026",
-  "new_tag_placeholder":   "New tag name\u2026",
-  "modal_search_metadata": "Search Metadata",
+  "add_existing_tag":        "Add existing tag\u2026",
+  "new_tag_placeholder":     "New tag name\u2026",
+  "modal_search_metadata":   "Search Metadata",
   "meta_title_placeholder":  "Title\u2026",
   "meta_author_placeholder": "Author\u2026",
 
   "drop_hint":         "Drag & drop ebook files here",
   "supported_formats": "Supported: EPUB, PDF, MOBI, AZW, CBZ, FB2",
 
-  "book_singular": "book",
-  "books_plural":  "books",
+  "book_singular":  "book",
+  "books_plural":   "books",
   "unknown_author": "Unknown author",
 
   "no_books_found": "No books found.",
@@ -73,17 +75,21 @@
   "no_authors_yet": "No authors yet.",
   "no_series_yet":  "No series yet. Edit a book to assign it to a series.",
   "no_tags_yet":    "No tags yet.",
-  "upload_prompt":  "Upload some!",
+  "upload_prompt":       "Upload some!",
   "upload_prompt_books": "Upload some books!",
 
-  "uploading":       "Uploading",
-  "file_singular":   "file",
-  "files_plural":    "files",
-  "searching":       "Searching\u2026",
-  "no_results":      "No results found.",
-  "upload_failed":   "Upload failed. Please try again.",
-  "saved":           "Saved",
-  "save_failed":     "Save failed",
+  "uploading":     "Uploading",
+  "file_singular": "file",
+  "files_plural":  "files",
+  "searching":     "Searching\u2026",
+  "no_results":    "No results found.",
+  "upload_failed": "Upload failed. Please try again.",
+  "saved":         "Saved",
+  "save_failed":   "Save failed",
+
+  "language_settings": "Interface Language",
+  "language_hint":     "Click a language to switch immediately.",
+  "add_language_hint": "To add a language, drop a JSON file in the locales/ folder.",
 
   "confirm_delete_book": "Delete \"%s\"? This cannot be undone.",
   "confirm_delete_tag":  "Delete this tag? It will be removed from all books."

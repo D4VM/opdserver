@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ ui.settings }} — {{ SERVER_TITLE }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-gear-fill"></i>{{ ui.settings }}</h1>
+</div>
+
+<div class="row">
+  <div class="col-md-7 col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-translate me-1"></i>{{ ui.language_settings }}
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">{{ ui.language_hint }}</p>
+        <div class="lang-grid">
+          {% for locale in locales %}
+          <form method="post" action="/settings/language">
+            <input type="hidden" name="lang" value="{{ locale.code }}">
+            <button type="submit"
+              class="lang-card {% if locale.code == current_lang %}active{% endif %}">
+              <i class="bi bi-check2 lang-check"></i>
+              <span class="lang-name">{{ locale.name }}</span>
+              <span class="lang-code">{{ locale.code }}</span>
+            </button>
+          </form>
+          {% endfor %}
+        </div>
+        <p class="text-muted small mt-3 mb-0">
+          <i class="bi bi-info-circle me-1"></i>{{ ui.add_language_hint }}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

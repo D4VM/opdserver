@@ -38,6 +38,9 @@
       </a>
     </nav>
     <div class="sidebar-footer">
+      <a href="/settings" class="sidebar-link{% if path == '/settings' %} active{% endif %}">
+        <i class="bi bi-gear-fill"></i><span>{{ ui.nav_settings }}</span>
+      </a>
       <a href="/opds" target="_blank" class="sidebar-link sidebar-link-sm">
         <i class="bi bi-rss-fill"></i>
         <span>{{ ui.nav_opds_feed }}</span>
