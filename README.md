@@ -9,7 +9,7 @@ An OPDS 1.2 catalog server for serving ebooks to KOReader on jailbroken Kindles.
 - **Metadata search** — fetch metadata automatically from Google Books and Open Library
 - **Cover extraction** — covers are extracted from EPUB files on upload
 - **Tag / Author / Series organization** — browse and filter your library
-- **EPUB write-back** — optionally save metadata changes back into the EPUB file
+- **Metadata write-back** — optionally save metadata changes back into EPUB, PDF, FB2, and CBZ files
 - **Extensible metadata plugins** — drop a `.py` file in `metadata/` to add a new source
 
 ## Quick Start
@@ -170,6 +170,15 @@ environment:
 ```
 
 If a key is missing from your translation file, the interface falls back to the English value.
+
+## Running Tests
+
+```bash
+pip install -r requirements.txt
+python3 -m pytest tests/ -v
+```
+
+The suite uses a temporary database and file directories — it never touches your library data.
 
 ## Supported Formats
 
