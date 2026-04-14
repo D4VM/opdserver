@@ -23,9 +23,11 @@ function updateBulkBar() {
     bar.style.display = 'none';
   } else {
     bar.style.display = 'flex';
-    countEl.textContent = `${ids.length} book${ids.length === 1 ? '' : 's'} selected`;
+    const tpl = ids.length === 1
+      ? (window.UI?.bulk_selected_singular || '1 book selected')
+      : (window.UI?.bulk_selected || '%d books selected').replace('%d', ids.length);
+    countEl.textContent = tpl;
   }
-  // Highlight selected rows
   document.querySelectorAll('#books-table tbody tr').forEach(tr => {
     const cb = tr.querySelector('.book-select');
     tr.classList.toggle('selected-row', cb?.checked === true);
@@ -39,7 +41,6 @@ function clearSelection() {
   updateBulkBar();
 }
 
-// Wire up checkboxes once DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   const selectAll = document.getElementById('select-all');
   if (!selectAll) return;
@@ -64,14 +65,15 @@ document.addEventListener('DOMContentLoaded', () => {
 async function bulkDelete() {
   const ids = selectedIds();
   if (ids.length === 0) return;
-  if (!confirm(`Delete ${ids.length} book${ids.length === 1 ? '' : 's'}? This cannot be undone.`)) return;
+  const tpl = (window.UI?.bulk_delete_confirm || 'Delete %d books? This cannot be undone.').replace('%d', ids.length);
+  if (!confirm(tpl)) return;
 
   const resp = await fetch('/api/books/bulk-delete', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ids }),
   });
-  if (!resp.ok) { alert('Delete failed'); return; }
+  if (!resp.ok) { alert(window.UI?.bulk_delete_failed || 'Delete failed'); return; }
 
   ids.forEach(id => document.querySelector(`tr[data-book-id="${id}"]`)?.remove());
   clearSelection();
@@ -81,10 +83,14 @@ async function bulkDelete() {
 function bulkEdit() {
   const ids = selectedIds();
   if (ids.length === 0) return;
-  // Clear fields
   ['bulk-author','bulk-series','bulk-series-index','bulk-language','bulk-add-tags','bulk-remove-tags']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  document.getElementById('bulk-modal-count').textContent = ids.length;
+
+  const countEl = document.getElementById('bulk-modal-count');
+  if (countEl) {
+    const tpl = (window.UI?.bulk_apply_btn || 'Apply to %d books').replace('%d', ids.length);
+    countEl.textContent = tpl;
+  }
   new bootstrap.Modal(document.getElementById('bulkEditModal')).show();
 }
 
@@ -100,22 +106,21 @@ async function bulkEditSubmit() {
   const addTagsRaw = document.getElementById('bulk-add-tags').value.trim();
   const removeTagsRaw = document.getElementById('bulk-remove-tags').value.trim();
 
-  if (author)      body.author = author;
-  if (series !== '') body.series = series;           // allow empty to clear series
-  if (seriesIndex) body.series_index = seriesIndex;
-  if (language)    body.language = language;
+  if (author)        body.author = author;
+  if (series !== '')  body.series = series;
+  if (seriesIndex)   body.series_index = seriesIndex;
+  if (language)      body.language = language;
   if (addTagsRaw)    body.add_tags    = addTagsRaw.split(',').map(s => s.trim()).filter(Boolean);
   if (removeTagsRaw) body.remove_tags = removeTagsRaw.split(',').map(s => s.trim()).filter(Boolean);
 
-  const modal = bootstrap.Modal.getInstance(document.getElementById('bulkEditModal'));
-  modal?.hide();
+  bootstrap.Modal.getInstance(document.getElementById('bulkEditModal'))?.hide();
 
   const resp = await fetch('/api/books/bulk-edit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!resp.ok) { alert('Edit failed'); return; }
+  if (!resp.ok) { alert(window.UI?.bulk_edit_failed || 'Edit failed'); return; }
 
   clearSelection();
   location.reload();

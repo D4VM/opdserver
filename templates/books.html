@@ -147,10 +147,10 @@
 <div id="bulk-bar" class="bulk-bar" style="display:none">
   <span id="bulk-count" class="bulk-count"></span>
   <button class="btn btn-sm btn-outline-light ms-3" onclick="bulkEdit()">
-    <i class="bi bi-pencil-square me-1"></i>Edit fields
+    <i class="bi bi-pencil-square me-1"></i>{{ ui.bulk_edit_fields }}
   </button>
   <button class="btn btn-sm btn-outline-danger ms-2" onclick="bulkDelete()">
-    <i class="bi bi-trash me-1"></i>Delete
+    <i class="bi bi-trash me-1"></i>{{ ui.btn_delete }}
   </button>
   <button class="btn btn-sm btn-link text-white ms-auto" onclick="clearSelection()">
     <i class="bi bi-x-lg"></i>
@@ -162,42 +162,42 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Edit selected books</h5>
+        <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>{{ ui.bulk_edit_title }}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <p class="text-muted small mb-3">Leave a field blank to keep each book's existing value.</p>
+        <p class="text-muted small mb-3">{{ ui.bulk_edit_hint }}</p>
         <div class="mb-3">
-          <label class="form-label small fw-semibold">Author</label>
+          <label class="form-label small fw-semibold">{{ ui.lbl_author }}</label>
           <input type="text" id="bulk-author" class="form-control form-control-sm" placeholder="e.g. Jane Austen">
         </div>
         <div class="row g-2 mb-3">
           <div class="col-8">
-            <label class="form-label small fw-semibold">Series</label>
+            <label class="form-label small fw-semibold">{{ ui.lbl_series }}</label>
             <input type="text" id="bulk-series" class="form-control form-control-sm" placeholder="e.g. Dune">
           </div>
           <div class="col-4">
-            <label class="form-label small fw-semibold">Index</label>
+            <label class="form-label small fw-semibold">{{ ui.bulk_lbl_index }}</label>
             <input type="number" id="bulk-series-index" class="form-control form-control-sm" placeholder="e.g. 1" step="any" min="0">
           </div>
         </div>
         <div class="mb-3">
-          <label class="form-label small fw-semibold">Language</label>
+          <label class="form-label small fw-semibold">{{ ui.lbl_language }}</label>
           <input type="text" id="bulk-language" class="form-control form-control-sm" placeholder="e.g. en">
         </div>
         <div class="mb-3">
-          <label class="form-label small fw-semibold">Add tags <span class="text-muted fw-normal">(comma-separated)</span></label>
+          <label class="form-label small fw-semibold">{{ ui.bulk_lbl_add_tags }} <span class="text-muted fw-normal">({{ ui.bulk_tags_hint }})</span></label>
           <input type="text" id="bulk-add-tags" class="form-control form-control-sm" placeholder="e.g. sci-fi, classic">
         </div>
         <div class="mb-0">
-          <label class="form-label small fw-semibold">Remove tags <span class="text-muted fw-normal">(comma-separated)</span></label>
+          <label class="form-label small fw-semibold">{{ ui.bulk_lbl_remove_tags }} <span class="text-muted fw-normal">({{ ui.bulk_tags_hint }})</span></label>
           <input type="text" id="bulk-remove-tags" class="form-control form-control-sm" placeholder="e.g. unread">
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ ui.btn_cancel }}</button>
         <button type="button" class="btn btn-primary btn-sm" onclick="bulkEditSubmit()">
-          <i class="bi bi-check-lg me-1"></i>Apply to <span id="bulk-modal-count"></span> books
+          <i class="bi bi-check-lg me-1"></i><span id="bulk-modal-count"></span>
         </button>
       </div>
     </div>

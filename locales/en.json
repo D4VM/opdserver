@@ -31,6 +31,7 @@
   "btn_search_metadata": "Search Metadata",
   "btn_create_add":      "Create & Add",
   "btn_view_library":    "View Library",
+  "btn_cancel":          "Cancel",
 
   "search_placeholder": "Search title, author, series\u2026",
   "filter_all_tags":    "All tags",
@@ -94,5 +95,19 @@
   "add_language_hint": "To add a language, drop a JSON file in the locales/ folder.",
 
   "confirm_delete_book": "Delete \"%s\"? This cannot be undone.",
-  "confirm_delete_tag":  "Delete this tag? It will be removed from all books."
+  "confirm_delete_tag":  "Delete this tag? It will be removed from all books.",
+
+  "bulk_selected":          "%d books selected",
+  "bulk_selected_singular": "1 book selected",
+  "bulk_edit_title":        "Edit selected books",
+  "bulk_edit_hint":         "Leave a field blank to keep each book\u2019s existing value.",
+  "bulk_lbl_index":         "Index",
+  "bulk_lbl_add_tags":      "Add tags",
+  "bulk_lbl_remove_tags":   "Remove tags",
+  "bulk_tags_hint":         "comma-separated",
+  "bulk_apply_btn":         "Apply to %d books",
+  "bulk_edit_fields":       "Edit fields",
+  "bulk_delete_confirm":    "Delete %d books? This cannot be undone.",
+  "bulk_delete_failed":     "Delete failed",
+  "bulk_edit_failed":       "Edit failed"
 }
