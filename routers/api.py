@@ -268,7 +268,7 @@ def _detect_format(data: bytes, filename: str) -> Optional[str]:
 WRITEBACK_FORMATS = {"epub", "pdf", "fb2", "cbz"}
 
 
-def _write_metadata_to_epub(path: Path, fields: dict) -> None:
+def _write_metadata_to_epub(path: Path, fields: dict, cover_bytes: Optional[bytes] = None) -> None:
     try:
         import ebooklib
         from ebooklib import epub as epublib
@@ -289,12 +289,30 @@ def _write_metadata_to_epub(path: Path, fields: dict) -> None:
                     if k != dc_name
                 }
                 book.add_metadata("DC", dc_name, fields[field])
+
+        if cover_bytes:
+            # Replace existing cover image or add a new one
+            cover_item = None
+            for item in book.get_items():
+                if item.media_type.startswith("image/") and "cover" in item.get_name().lower():
+                    cover_item = item
+                    break
+            if cover_item:
+                cover_item.set_content(cover_bytes)
+            else:
+                cover_item = epublib.EpubImage()
+                cover_item.file_name = "cover.jpg"
+                cover_item.media_type = "image/jpeg"
+                cover_item.set_content(cover_bytes)
+                book.add_item(cover_item)
+
         epublib.write_epub(str(path), book)
     except Exception as e:
         logger.warning("EPUB metadata write-back failed: %s", e)
 
 
-def _write_metadata_to_pdf(path: Path, fields: dict) -> None:
+def _write_metadata_to_pdf(path: Path, fields: dict, cover_bytes: Optional[bytes] = None) -> None:
+    # PDFs have no standard embedded cover art field — metadata only
     try:
         import fitz
         doc = fitz.open(str(path))
@@ -317,8 +335,9 @@ def _write_metadata_to_pdf(path: Path, fields: dict) -> None:
         logger.warning("PDF metadata write-back failed: %s", e)
 
 
-def _write_metadata_to_fb2(path: Path, fields: dict) -> None:
+def _write_metadata_to_fb2(path: Path, fields: dict, cover_bytes: Optional[bytes] = None) -> None:
     try:
+        import base64
         import zipfile
         from lxml import etree
 
@@ -389,6 +408,26 @@ def _write_metadata_to_fb2(path: Path, fields: dict) -> None:
             if fields.get("published"):
                 _set(pub_info, "year", str(fields["published"])[:4])
 
+        if cover_bytes:
+            cover_id = "cover.jpg"
+            # Update existing binary or append new one
+            binary_el = None
+            for binary in root.iter(_tag("binary")):
+                if "cover" in (binary.get("id") or "").lower():
+                    binary_el = binary
+                    break
+            if binary_el is None:
+                binary_el = etree.SubElement(root, _tag("binary"))
+                binary_el.set("id", cover_id)
+                binary_el.set("content-type", "image/jpeg")
+                # Add coverpage reference in title-info if missing
+                coverpage = title_info.find(_tag("coverpage"))
+                if coverpage is None:
+                    coverpage = etree.SubElement(title_info, _tag("coverpage"))
+                img = etree.SubElement(coverpage, _tag("image"))
+                img.set("{http://www.w3.org/1999/xlink}href", f"#{cover_id}")
+            binary_el.text = base64.b64encode(cover_bytes).decode("ascii")
+
         new_content = etree.tostring(root, xml_declaration=True, encoding="utf-8", pretty_print=True)
 
         if is_zip:
@@ -403,20 +442,22 @@ def _write_metadata_to_fb2(path: Path, fields: dict) -> None:
         logger.warning("FB2 metadata write-back failed: %s", e)
 
 
-def _write_metadata_to_cbz(path: Path, fields: dict) -> None:
+def _write_metadata_to_cbz(path: Path, fields: dict, cover_bytes: Optional[bytes] = None) -> None:
     try:
         import zipfile
         from lxml import etree
 
         comic_info: Optional[etree._Element] = None
         ci_filename = "ComicInfo.xml"
+        existing_cover_name: Optional[str] = None
 
         with zipfile.ZipFile(path) as zf:
             for name in zf.namelist():
                 if name.lower() == "comicinfo.xml":
                     ci_filename = name
                     comic_info = etree.fromstring(zf.read(name))
-                    break
+                if cover_bytes and name.lower() in ("cover.jpg", "cover.jpeg", "cover.png"):
+                    existing_cover_name = name
 
         if comic_info is None:
             comic_info = etree.Element("ComicInfo")
@@ -441,23 +482,29 @@ def _write_metadata_to_cbz(path: Path, fields: dict) -> None:
             node.text = str(fields["published"])[:4]
 
         new_xml = etree.tostring(comic_info, xml_declaration=True, encoding="utf-8", pretty_print=True)
+        cover_name = existing_cover_name or "cover.jpg"
 
         tmp = path.with_suffix(".tmp.cbz")
         with zipfile.ZipFile(path) as src, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as dst:
             for item in src.infolist():
                 if item.filename.lower() == "comicinfo.xml":
                     dst.writestr(ci_filename, new_xml)
+                elif cover_bytes and item.filename == cover_name:
+                    dst.writestr(cover_name, cover_bytes)
                 else:
                     dst.writestr(item, src.read(item.filename))
             if ci_filename not in [i.filename for i in src.infolist()]:
                 dst.writestr(ci_filename, new_xml)
+            if cover_bytes and not existing_cover_name:
+                dst.writestr(cover_name, cover_bytes)
         tmp.replace(path)
     except Exception as e:
         logger.warning("CBZ metadata write-back failed: %s", e)
 
 
-def _write_metadata_to_file(path: Path, fmt: str, fields: dict) -> None:
+def _write_metadata_to_file(path: Path, fmt: str, fields: dict, cover_bytes: Optional[bytes] = None) -> None:
     """Dispatch metadata write-back to the appropriate format handler."""
+    clean = {k: v for k, v in fields.items() if k != "updated_at"}
     writers = {
         "epub": _write_metadata_to_epub,
         "pdf":  _write_metadata_to_pdf,
@@ -466,7 +513,7 @@ def _write_metadata_to_file(path: Path, fmt: str, fields: dict) -> None:
     }
     writer = writers.get(fmt)
     if writer:
-        writer(path, {k: v for k, v in fields.items() if k != "updated_at"})
+        writer(path, clean, cover_bytes)
 
 
 # ── Upload ────────────────────────────────────────────────────────────────────
@@ -777,10 +824,15 @@ async def apply_metadata(
             pass
 
     # Fetch and save cover from URL
+    saved_cover_bytes: Optional[bytes] = None
     if cover_url:
         saved = await _fetch_cover_from_url(cover_url, book_id)
         if saved:
             fields["cover_path"] = saved
+            # Read back the processed (resized) cover for file write-back
+            cover_file = config.BASE_DIR / saved
+            if cover_file.exists():
+                saved_cover_bytes = cover_file.read_bytes()
 
     await database.update_book(db, book_id, fields)
 
@@ -791,6 +843,9 @@ async def apply_metadata(
             await database.add_book_tag(db, book_id, tag.id)
 
     if write_to_file and book.format in WRITEBACK_FORMATS:
-        _write_metadata_to_file(config.BASE_DIR / book.file_path, book.format, fields)
+        _write_metadata_to_file(
+            config.BASE_DIR / book.file_path, book.format, fields,
+            cover_bytes=saved_cover_bytes,
+        )
 
     return {"ok": True}
