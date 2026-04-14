@@ -18,7 +18,7 @@
           <form method="post" action="/settings/language">
             <input type="hidden" name="lang" value="{{ locale.code }}">
             <button type="submit"
-              class="lang-card {% if locale.code == current_lang %}active{% endif %}">
+              class="lang-card {% if locale.code == current_lang() %}active{% endif %}">
               <i class="bi bi-check2 lang-check"></i>
               <span class="lang-name">{{ locale.name }}</span>
               <span class="lang-code">{{ locale.code }}</span>

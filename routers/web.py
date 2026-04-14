@@ -154,7 +154,6 @@ async def settings_page(request: Request):
         {
             "request": request,
             "locales": list_locales(),
-            "current_lang": get_current_lang(),
         },
     )
 
