@@ -54,8 +54,10 @@
   "lbl_metadata":    "Metadata",
   "lbl_tags":        "Tags",
 
-  "write_to_epub": "Write metadata back to EPUB file",
-  "epub_only":     "EPUB only",
+  "write_to_epub":        "Write metadata back to EPUB file",
+  "epub_only":            "EPUB only",
+  "write_to_file":        "Write metadata back to file",
+  "writeback_unsupported": "not supported for this format",
 
   "add_existing_tag":        "Add existing tag\u2026",
   "new_tag_placeholder":     "New tag name\u2026",

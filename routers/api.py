@@ -265,8 +265,10 @@ def _detect_format(data: bytes, filename: str) -> Optional[str]:
     return ext if ext in SUPPORTED_EXT else None
 
 
+WRITEBACK_FORMATS = {"epub", "pdf", "fb2", "cbz"}
+
+
 def _write_metadata_to_epub(path: Path, fields: dict) -> None:
-    """Write updated metadata back to the EPUB file."""
     try:
         import ebooklib
         from ebooklib import epub as epublib
@@ -290,6 +292,181 @@ def _write_metadata_to_epub(path: Path, fields: dict) -> None:
         epublib.write_epub(str(path), book)
     except Exception as e:
         logger.warning("EPUB metadata write-back failed: %s", e)
+
+
+def _write_metadata_to_pdf(path: Path, fields: dict) -> None:
+    try:
+        import fitz
+        doc = fitz.open(str(path))
+        meta = dict(doc.metadata or {})
+        field_map = {
+            "title":       "title",
+            "author":      "author",
+            "description": "subject",
+            "publisher":   "creator",
+        }
+        for field, pdf_key in field_map.items():
+            if field in fields and fields[field]:
+                meta[pdf_key] = fields[field]
+        doc.set_metadata(meta)
+        tmp = path.with_suffix(".tmp.pdf")
+        doc.save(str(tmp), deflate=True)
+        doc.close()
+        tmp.replace(path)
+    except Exception as e:
+        logger.warning("PDF metadata write-back failed: %s", e)
+
+
+def _write_metadata_to_fb2(path: Path, fields: dict) -> None:
+    try:
+        import zipfile
+        from lxml import etree
+
+        is_zip = False
+        zip_name: Optional[str] = None
+        content = path.read_bytes()
+
+        if content[:2] == b"PK":
+            is_zip = True
+            with zipfile.ZipFile(path) as zf:
+                fb2_names = [n for n in zf.namelist() if n.lower().endswith(".fb2")]
+                if not fb2_names:
+                    return
+                zip_name = fb2_names[0]
+                content = zf.read(zip_name)
+
+        root = etree.fromstring(content)
+        ns = root.nsmap.get(None, "")
+
+        def _tag(name: str) -> str:
+            return f"{{{ns}}}{name}" if ns else name
+
+        def _set(parent, tag_name: str, value: str) -> None:
+            node = parent.find(_tag(tag_name))
+            if node is None:
+                node = etree.SubElement(parent, _tag(tag_name))
+            node.text = value
+
+        desc = root.find(_tag("description"))
+        if desc is None:
+            return
+        title_info = desc.find(_tag("title-info"))
+        if title_info is None:
+            return
+
+        if fields.get("title"):
+            _set(title_info, "book-title", fields["title"])
+
+        if fields.get("author"):
+            author_node = title_info.find(_tag("author"))
+            if author_node is None:
+                author_node = etree.SubElement(title_info, _tag("author"))
+            for child in list(author_node):
+                author_node.remove(child)
+            parts = fields["author"].rsplit(" ", 1)
+            fn = etree.SubElement(author_node, _tag("first-name"))
+            fn.text = parts[0]
+            ln = etree.SubElement(author_node, _tag("last-name"))
+            ln.text = parts[1] if len(parts) == 2 else ""
+
+        if fields.get("language"):
+            _set(title_info, "lang", fields["language"])
+
+        if fields.get("description"):
+            ann = title_info.find(_tag("annotation"))
+            if ann is not None:
+                title_info.remove(ann)
+            ann = etree.SubElement(title_info, _tag("annotation"))
+            p = etree.SubElement(ann, _tag("p"))
+            p.text = fields["description"]
+
+        if fields.get("publisher") or fields.get("published"):
+            pub_info = desc.find(_tag("publish-info"))
+            if pub_info is None:
+                pub_info = etree.SubElement(desc, _tag("publish-info"))
+            if fields.get("publisher"):
+                _set(pub_info, "publisher", fields["publisher"])
+            if fields.get("published"):
+                _set(pub_info, "year", str(fields["published"])[:4])
+
+        new_content = etree.tostring(root, xml_declaration=True, encoding="utf-8", pretty_print=True)
+
+        if is_zip:
+            tmp = path.with_suffix(".tmp.zip")
+            with zipfile.ZipFile(path) as src, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as dst:
+                for item in src.infolist():
+                    dst.writestr(item, new_content if item.filename == zip_name else src.read(item.filename))
+            tmp.replace(path)
+        else:
+            path.write_bytes(new_content)
+    except Exception as e:
+        logger.warning("FB2 metadata write-back failed: %s", e)
+
+
+def _write_metadata_to_cbz(path: Path, fields: dict) -> None:
+    try:
+        import zipfile
+        from lxml import etree
+
+        comic_info: Optional[etree._Element] = None
+        ci_filename = "ComicInfo.xml"
+
+        with zipfile.ZipFile(path) as zf:
+            for name in zf.namelist():
+                if name.lower() == "comicinfo.xml":
+                    ci_filename = name
+                    comic_info = etree.fromstring(zf.read(name))
+                    break
+
+        if comic_info is None:
+            comic_info = etree.Element("ComicInfo")
+
+        field_map = {
+            "title":       "Title",
+            "author":      "Writer",
+            "publisher":   "Publisher",
+            "description": "Summary",
+        }
+        for field, xml_tag in field_map.items():
+            if fields.get(field):
+                node = comic_info.find(xml_tag)
+                if node is None:
+                    node = etree.SubElement(comic_info, xml_tag)
+                node.text = fields[field]
+
+        if fields.get("published"):
+            node = comic_info.find("Year")
+            if node is None:
+                node = etree.SubElement(comic_info, "Year")
+            node.text = str(fields["published"])[:4]
+
+        new_xml = etree.tostring(comic_info, xml_declaration=True, encoding="utf-8", pretty_print=True)
+
+        tmp = path.with_suffix(".tmp.cbz")
+        with zipfile.ZipFile(path) as src, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as dst:
+            for item in src.infolist():
+                if item.filename.lower() == "comicinfo.xml":
+                    dst.writestr(ci_filename, new_xml)
+                else:
+                    dst.writestr(item, src.read(item.filename))
+            if ci_filename not in [i.filename for i in src.infolist()]:
+                dst.writestr(ci_filename, new_xml)
+        tmp.replace(path)
+    except Exception as e:
+        logger.warning("CBZ metadata write-back failed: %s", e)
+
+
+def _write_metadata_to_file(path: Path, fmt: str, fields: dict) -> None:
+    """Dispatch metadata write-back to the appropriate format handler."""
+    writers = {
+        "epub": _write_metadata_to_epub,
+        "pdf":  _write_metadata_to_pdf,
+        "fb2":  _write_metadata_to_fb2,
+        "cbz":  _write_metadata_to_cbz,
+    }
+    writer = writers.get(fmt)
+    if writer:
+        writer(path, {k: v for k, v in fields.items() if k != "updated_at"})
 
 
 # ── Upload ────────────────────────────────────────────────────────────────────
@@ -394,9 +571,8 @@ async def update_book(
 
     await database.update_book(db, book_id, fields)
 
-    if write_to_file and book.format == "epub":
-        epub_path = config.BASE_DIR / book.file_path
-        _write_metadata_to_epub(epub_path, {k: v for k, v in fields.items() if k != "updated_at"})
+    if write_to_file and book.format in WRITEBACK_FORMATS:
+        _write_metadata_to_file(config.BASE_DIR / book.file_path, book.format, fields)
 
     return {"ok": True}
 
@@ -614,8 +790,7 @@ async def apply_metadata(
             tag = await database.create_tag(db, tag_name)
             await database.add_book_tag(db, book_id, tag.id)
 
-    if write_to_file and book.format == "epub":
-        epub_path = config.BASE_DIR / book.file_path
-        _write_metadata_to_epub(epub_path, {k: v for k, v in fields.items() if k != "updated_at"})
+    if write_to_file and book.format in WRITEBACK_FORMATS:
+        _write_metadata_to_file(config.BASE_DIR / book.file_path, book.format, fields)
 
     return {"ok": True}

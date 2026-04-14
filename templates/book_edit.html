@@ -79,13 +79,14 @@
             </div>
           </div>
 
+          {% set supports_writeback = book.format in ('epub', 'pdf', 'fb2', 'cbz') %}
           <div class="form-check mt-3">
             <input class="form-check-input" type="checkbox" id="write-to-file"
-              {% if book.format != 'epub' %}disabled{% endif %}>
+              {% if not supports_writeback %}disabled{% endif %}>
             <label class="form-check-label small" for="write-to-file">
-              {{ ui.write_to_epub }}
-              {% if book.format != 'epub' %}
-              <span class="text-muted">({{ ui.epub_only }})</span>
+              {{ ui.write_to_file }}
+              {% if not supports_writeback %}
+              <span class="text-muted">({{ ui.writeback_unsupported }})</span>
               {% endif %}
             </label>
           </div>
