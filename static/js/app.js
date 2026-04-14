@@ -4,6 +4,6 @@ async function deleteBook(bookId, title) {
   if (!confirm(tpl.replace('%s', title))) return;
   const resp = await fetch(`/api/books/${bookId}`, { method: 'DELETE' });
   if (resp.ok) {
-    document.querySelector(`[onclick*="${bookId}"]`)?.closest('tr')?.remove();
+    document.querySelector(`tr[data-book-id="${bookId}"]`)?.remove();
   }
 }

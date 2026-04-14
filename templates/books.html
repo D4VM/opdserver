@@ -46,7 +46,7 @@
   {% for book in books %}
   {% set book_tags = tag_map.get(book.id, []) %}
   {% set extra_tags = (book_tags | length) - 3 %}
-  <tr>
+  <tr data-book-id="{{ book.id }}">
     <td>
       {% if book.cover_path %}
       <img src="/covers/{{ book.id }}.jpg" class="book-thumb" alt="">

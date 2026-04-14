@@ -130,7 +130,8 @@
         </div>
         <div class="input-group input-group-sm mt-2">
           <input type="text" class="form-control" id="new-tag-input"
-            placeholder="{{ ui.new_tag_placeholder }}">
+            placeholder="{{ ui.new_tag_placeholder }}"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();createAndAddTag('{{ book.id }}')}">
           <button class="btn btn-outline-primary" onclick="createAndAddTag('{{ book.id }}')">
             {{ ui.btn_create_add }}
           </button>

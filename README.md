@@ -21,7 +21,11 @@ An OPDS 1.2 catalog server for serving ebooks to KOReader on jailbroken Kindles.
 git clone https://github.com/D4VM/opdserver.git
 cd opdserver
 
-# 2. Set your LAN IP in docker-compose.yml (BASE_URL line), then:
+# 2. Pre-create the data directory and settings file
+#    (Docker will create settings.json as a directory if it doesn't exist first)
+mkdir -p data && touch data/settings.json
+
+# 3. Set your LAN IP in docker-compose.yml (BASE_URL line), then:
 docker compose up --build
 ```
 

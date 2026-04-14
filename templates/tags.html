@@ -9,7 +9,8 @@
   <div class="col-md-6 col-lg-5">
     <div class="input-group input-group-sm mb-3">
       <input type="text" class="form-control" id="new-tag"
-        placeholder="{{ ui.new_tag_placeholder }}">
+        placeholder="{{ ui.new_tag_placeholder }}"
+        onkeydown="if(event.key==='Enter')createTag()">
       <button class="btn btn-primary" onclick="createTag()">
         <i class="bi bi-plus-lg me-1"></i>{{ ui.btn_create }}
       </button>

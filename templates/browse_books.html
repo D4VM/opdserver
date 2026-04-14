@@ -28,7 +28,7 @@
   </thead>
   <tbody>
   {% for book in books %}
-  <tr>
+  <tr data-book-id="{{ book.id }}">
     <td>
       {% if book.cover_path %}
       <img src="/covers/{{ book.id }}.jpg" class="book-thumb" alt="">

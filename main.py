@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -12,14 +13,16 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s — %(message)s",
 )
 
-app = FastAPI(title=config.SERVER_TITLE, docs_url="/api/docs")
 
-
-@app.on_event("startup")
-async def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     config.BOOKS_DIR.mkdir(exist_ok=True)
     config.COVERS_DIR.mkdir(exist_ok=True)
     await init_db()
+    yield
+
+
+app = FastAPI(title=config.SERVER_TITLE, docs_url="/api/docs", lifespan=lifespan)
 
 
 # /files/{uuid}.ext serves with UUID name (internal use / direct links)

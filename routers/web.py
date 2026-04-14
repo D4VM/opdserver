@@ -15,6 +15,7 @@ templates = Jinja2Templates(directory=str(config.TEMPLATES_DIR))
 templates.env.filters["urlencode"] = urllib.parse.quote
 templates.env.globals["ui"] = get_active()          # same dict object, mutated on lang change
 templates.env.globals["SERVER_TITLE"] = config.SERVER_TITLE
+templates.env.globals["current_lang"] = get_current_lang  # callable — returns live value at render time
 
 
 def _filesize(n: int | None) -> str:
