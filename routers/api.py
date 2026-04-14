@@ -9,12 +9,12 @@ import urllib.parse
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import aiosqlite
 import httpx
 import magic
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from PIL import Image
 
@@ -697,6 +697,86 @@ async def upload_books(
 
 
 # ── Book CRUD ─────────────────────────────────────────────────────────────────
+# NOTE: bulk routes must be registered BEFORE /books/{book_id} so FastAPI
+# doesn't match "bulk-delete" / "bulk-edit" as a book_id path parameter.
+
+@router.post("/books/bulk-delete")
+async def bulk_delete_books(
+    ids: List[str] = Body(..., embed=True),
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    """Delete multiple books by ID. Skips IDs that don't exist."""
+    deleted = 0
+    for book_id in ids:
+        book = await database.get_book(db, book_id)
+        if not book:
+            continue
+        book_file = config.BASE_DIR / book.file_path
+        if book_file.exists():
+            book_file.unlink()
+        if book.cover_path:
+            cover_file = config.BASE_DIR / book.cover_path
+            if cover_file.exists():
+                cover_file.unlink()
+        await database.delete_book(db, book_id)
+        deleted += 1
+    return {"ok": True, "deleted": deleted}
+
+
+@router.post("/books/bulk-edit")
+async def bulk_edit_books(
+    ids: List[str] = Body(..., embed=True),
+    author: Optional[str] = Body(None),
+    series: Optional[str] = Body(None),
+    series_index: Optional[str] = Body(None),
+    language: Optional[str] = Body(None),
+    add_tags: Optional[List[str]] = Body(None),
+    remove_tags: Optional[List[str]] = Body(None),
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    """Update shared fields and/or tags across multiple books."""
+    fields: dict = {"updated_at": _now()}
+    for k, v in [("author", author), ("series", series), ("language", language)]:
+        if v is not None:
+            fields[k] = v or None
+
+    if series_index is not None:
+        try:
+            fields["series_index"] = float(series_index) if series_index else None
+        except ValueError:
+            pass
+
+    # Pre-resolve tag names to IDs once
+    add_tag_ids: List[int] = []
+    if add_tags:
+        for name in add_tags:
+            name = name.strip()
+            if name:
+                tag = await database.create_tag(db, name)
+                add_tag_ids.append(tag.id)
+
+    remove_tag_ids: List[int] = []
+    if remove_tags:
+        all_tags = {t.name: t.id for t in await database.get_tags(db)}
+        for name in remove_tags:
+            name = name.strip()
+            if name and name in all_tags:
+                remove_tag_ids.append(all_tags[name])
+
+    updated = 0
+    for book_id in ids:
+        book = await database.get_book(db, book_id)
+        if not book:
+            continue
+        if len(fields) > 1:  # more than just updated_at
+            await database.update_book(db, book_id, fields)
+        for tag_id in add_tag_ids:
+            await database.add_book_tag(db, book_id, tag_id)
+        for tag_id in remove_tag_ids:
+            await database.remove_book_tag(db, book_id, tag_id)
+        updated += 1
+    return {"ok": True, "updated": updated}
+
 
 @router.post("/books/{book_id}")
 async def update_book(

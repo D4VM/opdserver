@@ -493,6 +493,38 @@ a.tag-pill:hover { background: var(--accent-soft-hover); color: var(--accent-hov
 .empty-state i { font-size: 3rem; opacity: .35; display: block; margin-bottom: .75rem; }
 .empty-state p { font-size: .9rem; margin: 0; }
 
+/* ─── Bulk action bar ───────────────────────────────── */
+.bulk-bar {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  background: #1e2129;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  padding: .5rem 1rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,.45);
+  z-index: 1050;
+  min-width: 360px;
+  gap: .25rem;
+  animation: bulk-bar-in .15s ease;
+}
+@keyframes bulk-bar-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.bulk-count {
+  color: #fff;
+  font-size: .85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+#books-table tbody tr.selected-row {
+  background: rgba(var(--accent-rgb, 52,211,153), .07);
+}
+
 /* ─── Settings — Language Picker ───────────────────── */
 .lang-grid {
   display: grid;
