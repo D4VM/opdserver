@@ -12,6 +12,10 @@ An OPDS 1.2 catalog server for serving ebooks to KOReader on jailbroken Kindles.
 - **Metadata write-back** — optionally save metadata changes back into EPUB, PDF, FB2, and CBZ files
 - **Extensible metadata plugins** — drop a `.py` file in `metadata/` to add a new source
 
+## Screenshot
+
+![OPD Server library view](docs/screenshot.png)
+
 ## Quick Start
 
 ### With Docker (recommended)
