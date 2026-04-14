@@ -272,39 +272,70 @@ def _write_metadata_to_epub(path: Path, fields: dict, cover_bytes: Optional[byte
     try:
         import ebooklib
         from ebooklib import epub as epublib
+        from ebooklib.epub import NAMESPACES
 
-        book = epublib.read_epub(str(path), options={"ignore_ncx": True})
+        book = epublib.read_epub(str(path))
+        DC_NS = NAMESPACES["DC"]   # "http://purl.org/dc/elements/1.1/"
+        OPF_NS = NAMESPACES["OPF"] # "http://www.idpf.org/2007/opf"
+
         dc_map = {
-            "title": "title",
-            "author": "creator",
+            "title":       "title",
+            "author":      "creator",
             "description": "description",
-            "publisher": "publisher",
-            "language": "language",
-            "published": "date",
+            "publisher":   "publisher",
+            "language":    "language",
+            "published":   "date",
         }
         for field, dc_name in dc_map.items():
-            if field in fields and fields[field] is not None:
-                book.metadata["DC"] = {
-                    k: v for k, v in book.metadata.get("DC", {}).items()
-                    if k != dc_name
-                }
+            if fields.get(field) is not None:
+                # Clear ALL existing values for this DC field first
+                if DC_NS in book.metadata:
+                    book.metadata[DC_NS].pop(dc_name, None)
                 book.add_metadata("DC", dc_name, fields[field])
 
+        # Series via Calibre OPF meta tags.
+        # ebooklib writes them as <meta name="calibre:series" content="..."/> in OPF.
+        # On read-back ebooklib splits the prefix and stores under book.metadata["calibre"],
+        # so we clear both the read namespace and the write namespace to avoid duplicates.
+        if fields.get("series") is not None or fields.get("series_index") is not None:
+            book.metadata.pop("calibre", None)               # clear read-back namespace
+            if OPF_NS not in book.metadata:
+                book.metadata[OPF_NS] = {}
+            book.metadata[OPF_NS].pop("calibre:series", None)      # clear any prior write
+            book.metadata[OPF_NS].pop("calibre:series_index", None)
+            if fields.get("series"):
+                book.metadata[OPF_NS]["calibre:series"] = [
+                    (None, {"name": "calibre:series", "content": fields["series"]})
+                ]
+            if fields.get("series_index") is not None:
+                idx = fields["series_index"]
+                idx_str = str(int(idx)) if idx == int(idx) else str(idx)
+                book.metadata[OPF_NS]["calibre:series_index"] = [
+                    (None, {"name": "calibre:series_index", "content": idx_str})
+                ]
+
         if cover_bytes:
-            # Replace existing cover image or add a new one
+            # Prefer item with cover-image property, then fall back to name match
             cover_item = None
-            for item in book.get_items():
-                if item.media_type.startswith("image/") and "cover" in item.get_name().lower():
-                    cover_item = item
-                    break
+            for item in book.get_items_of_type(ebooklib.ITEM_COVER):
+                cover_item = item
+                break
+            if cover_item is None:
+                for item in book.get_items():
+                    if item.media_type.startswith("image/") and "cover" in item.get_name().lower():
+                        cover_item = item
+                        break
             if cover_item:
                 cover_item.set_content(cover_bytes)
             else:
                 cover_item = epublib.EpubImage()
-                cover_item.file_name = "cover.jpg"
+                cover_item.file_name = "images/cover.jpg"
                 cover_item.media_type = "image/jpeg"
                 cover_item.set_content(cover_bytes)
                 book.add_item(cover_item)
+                # Mark as cover-image in OPF
+                book.add_metadata(None, "meta", "", {"name": "cover",
+                                                      "content": cover_item.id})
 
         epublib.write_epub(str(path), book)
     except Exception as e:
@@ -313,6 +344,7 @@ def _write_metadata_to_epub(path: Path, fields: dict, cover_bytes: Optional[byte
 
 def _write_metadata_to_pdf(path: Path, fields: dict, cover_bytes: Optional[bytes] = None) -> None:
     # PDFs have no standard embedded cover art field — metadata only
+    tmp = path.with_suffix(".tmp.pdf")
     try:
         import fitz
         doc = fitz.open(str(path))
@@ -324,15 +356,15 @@ def _write_metadata_to_pdf(path: Path, fields: dict, cover_bytes: Optional[bytes
             "publisher":   "creator",
         }
         for field, pdf_key in field_map.items():
-            if field in fields and fields[field]:
+            if fields.get(field):
                 meta[pdf_key] = fields[field]
         doc.set_metadata(meta)
-        tmp = path.with_suffix(".tmp.pdf")
         doc.save(str(tmp), deflate=True)
         doc.close()
         tmp.replace(path)
     except Exception as e:
         logger.warning("PDF metadata write-back failed: %s", e)
+        tmp.unlink(missing_ok=True)
 
 
 def _write_metadata_to_fb2(path: Path, fields: dict, cover_bytes: Optional[bytes] = None) -> None:
@@ -408,6 +440,20 @@ def _write_metadata_to_fb2(path: Path, fields: dict, cover_bytes: Optional[bytes
             if fields.get("published"):
                 _set(pub_info, "year", str(fields["published"])[:4])
 
+        # Series via FB2 <sequence> element
+        if fields.get("series") is not None or fields.get("series_index") is not None:
+            seq = title_info.find(_tag("sequence"))
+            if fields.get("series"):
+                if seq is None:
+                    seq = etree.SubElement(title_info, _tag("sequence"))
+                seq.set("name", fields["series"])
+                if fields.get("series_index") is not None:
+                    idx = fields["series_index"]
+                    seq.set("number", str(int(idx)) if idx == int(idx) else str(idx))
+            elif seq is not None:
+                # series explicitly cleared
+                title_info.remove(seq)
+
         if cover_bytes:
             cover_id = "cover.jpg"
             # Update existing binary or append new one
@@ -432,10 +478,14 @@ def _write_metadata_to_fb2(path: Path, fields: dict, cover_bytes: Optional[bytes
 
         if is_zip:
             tmp = path.with_suffix(".tmp.zip")
-            with zipfile.ZipFile(path) as src, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as dst:
-                for item in src.infolist():
-                    dst.writestr(item, new_content if item.filename == zip_name else src.read(item.filename))
-            tmp.replace(path)
+            try:
+                with zipfile.ZipFile(path) as src, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as dst:
+                    for item in src.infolist():
+                        dst.writestr(item, new_content if item.filename == zip_name else src.read(item.filename))
+                tmp.replace(path)
+            except Exception:
+                tmp.unlink(missing_ok=True)
+                raise
         else:
             path.write_bytes(new_content)
     except Exception as e:
@@ -481,23 +531,40 @@ def _write_metadata_to_cbz(path: Path, fields: dict, cover_bytes: Optional[bytes
                 node = etree.SubElement(comic_info, "Year")
             node.text = str(fields["published"])[:4]
 
+        if fields.get("series"):
+            node = comic_info.find("Series")
+            if node is None:
+                node = etree.SubElement(comic_info, "Series")
+            node.text = fields["series"]
+
+        if fields.get("series_index") is not None:
+            idx = fields["series_index"]
+            node = comic_info.find("Number")
+            if node is None:
+                node = etree.SubElement(comic_info, "Number")
+            node.text = str(int(idx)) if idx == int(idx) else str(idx)
+
         new_xml = etree.tostring(comic_info, xml_declaration=True, encoding="utf-8", pretty_print=True)
         cover_name = existing_cover_name or "cover.jpg"
 
         tmp = path.with_suffix(".tmp.cbz")
-        with zipfile.ZipFile(path) as src, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as dst:
-            for item in src.infolist():
-                if item.filename.lower() == "comicinfo.xml":
+        try:
+            with zipfile.ZipFile(path) as src, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as dst:
+                for item in src.infolist():
+                    if item.filename.lower() == "comicinfo.xml":
+                        dst.writestr(ci_filename, new_xml)
+                    elif cover_bytes and item.filename == cover_name:
+                        dst.writestr(cover_name, cover_bytes)
+                    else:
+                        dst.writestr(item, src.read(item.filename))
+                if ci_filename not in [i.filename for i in src.infolist()]:
                     dst.writestr(ci_filename, new_xml)
-                elif cover_bytes and item.filename == cover_name:
+                if cover_bytes and not existing_cover_name:
                     dst.writestr(cover_name, cover_bytes)
-                else:
-                    dst.writestr(item, src.read(item.filename))
-            if ci_filename not in [i.filename for i in src.infolist()]:
-                dst.writestr(ci_filename, new_xml)
-            if cover_bytes and not existing_cover_name:
-                dst.writestr(cover_name, cover_bytes)
-        tmp.replace(path)
+            tmp.replace(path)
+        except Exception:
+            tmp.unlink(missing_ok=True)
+            raise
     except Exception as e:
         logger.warning("CBZ metadata write-back failed: %s", e)
 
