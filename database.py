@@ -1,7 +1,17 @@
+import re
 import aiosqlite
 from typing import AsyncGenerator, Optional
 from config import DB_PATH
 from models import Book, Tag
+
+# Whitelist of safe ORDER BY expressions accepted by get_books.
+# Prevents SQL injection if the parameter ever reaches untrusted code paths.
+_SAFE_ORDER_RE = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_, ]*$')
+_SAFE_ORDER_TOKENS = frozenset({
+    "NULLS", "LAST", "FIRST", "ASC", "DESC",
+    "title", "author", "format", "series", "series_index",
+    "added_at", "updated_at", "published",
+})
 
 
 async def get_db() -> AsyncGenerator[aiosqlite.Connection, None]:
@@ -117,8 +127,15 @@ async def get_books(
     )
     total = count_row[0][0]
 
+    # Validate order_by against a simple whitelist to prevent SQL injection.
+    # All tokens must be known column names or SQL keywords.
+    if not _SAFE_ORDER_RE.match(order_by) or not all(
+        tok in _SAFE_ORDER_TOKENS for tok in order_by.replace(",", " ").split()
+    ):
+        raise ValueError(f"Invalid order_by expression: {order_by!r}")
+
     rows = await db.execute_fetchall(
-        f"SELECT b.* FROM books b {where} ORDER BY b.{order_by} LIMIT ? OFFSET ?",
+        f"SELECT b.* FROM books b {where} ORDER BY {order_by} LIMIT ? OFFSET ?",
         params + [page_size, page * page_size],
     )
     return [_row_to_book(r) for r in rows], total
@@ -148,8 +165,18 @@ async def insert_book(db: aiosqlite.Connection, book: Book) -> None:
     await db.commit()
 
 
+_BOOK_COLUMNS = frozenset({
+    "title", "author", "description", "publisher", "language", "published",
+    "filename", "file_path", "file_size", "format", "cover_path",
+    "series", "series_index", "added_at", "updated_at",
+})
+
+
 async def update_book(db: aiosqlite.Connection, book_id: str, fields: dict) -> None:
     fields.pop("id", None)
+    unknown = set(fields) - _BOOK_COLUMNS
+    if unknown:
+        raise ValueError(f"Unknown book column(s): {unknown}")
     set_clause = ", ".join(f"{k} = ?" for k in fields)
     values = list(fields.values()) + [book_id]
     await db.execute(f"UPDATE books SET {set_clause} WHERE id = ?", values)

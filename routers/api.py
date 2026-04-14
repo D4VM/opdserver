@@ -1,8 +1,11 @@
 import hashlib
 import io
+import ipaddress
 import logging
 import os
 import re
+import socket
+import urllib.parse
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -137,7 +140,8 @@ def _extract_fb2(path: Path) -> dict:
                     return {}
                 content = zf.read(fb2_names[0])
 
-        root = etree.fromstring(content)
+        _safe_parser = etree.XMLParser(resolve_entities=False, no_network=True)
+        root = etree.fromstring(content, _safe_parser)
 
         # FB2 files may or may not declare a namespace
         ns = root.nsmap.get(None, "")
@@ -245,9 +249,39 @@ def _save_cover(cover_bytes: bytes, book_id: str) -> Optional[str]:
         return None
 
 
-async def _fetch_cover_from_url(url: str, book_id: str) -> Optional[str]:
+def _is_safe_url(url: str) -> bool:
+    """Return False for schemes or hosts that should not be fetched (SSRF guard)."""
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+        host = parsed.hostname or ""
+        if not host:
+            return False
+        # Resolve to IP and block private/loopback/link-local ranges.
+        # Try parsing as a literal IP first (handles IPv6 like ::1), then DNS.
+        try:
+            addr = ipaddress.ip_address(host)
+        except ValueError:
+            try:
+                addr = ipaddress.ip_address(socket.gethostbyname(host))
+            except (socket.gaierror, ValueError):
+                addr = None  # unresolvable host — let httpx fail naturally
+        if addr is not None and (
+            addr.is_loopback or addr.is_private or addr.is_link_local or addr.is_reserved
+        ):
+            return False
+        return True
+    except Exception:
+        return False
+
+
+async def _fetch_cover_from_url(url: str, book_id: str) -> Optional[str]:
+    if not _is_safe_url(url):
+        logger.warning("Cover URL blocked (SSRF guard): %s", url)
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=10, follow_redirects=False) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             return _save_cover(resp.content, book_id)
@@ -386,7 +420,8 @@ def _write_metadata_to_fb2(path: Path, fields: dict, cover_bytes: Optional[bytes
                 zip_name = fb2_names[0]
                 content = zf.read(zip_name)
 
-        root = etree.fromstring(content)
+        _safe_parser = etree.XMLParser(resolve_entities=False, no_network=True)
+        root = etree.fromstring(content, _safe_parser)
         ns = root.nsmap.get(None, "")
 
         def _tag(name: str) -> str:
@@ -501,11 +536,12 @@ def _write_metadata_to_cbz(path: Path, fields: dict, cover_bytes: Optional[bytes
         ci_filename = "ComicInfo.xml"
         existing_cover_name: Optional[str] = None
 
+        _xml_parser = etree.XMLParser(resolve_entities=False, no_network=True)
         with zipfile.ZipFile(path) as zf:
             for name in zf.namelist():
                 if name.lower() == "comicinfo.xml":
                     ci_filename = name
-                    comic_info = etree.fromstring(zf.read(name))
+                    comic_info = etree.fromstring(zf.read(name), _xml_parser)
                 if cover_bytes and name.lower() in ("cover.jpg", "cover.jpeg", "cover.png"):
                     existing_cover_name = name
 
@@ -550,14 +586,18 @@ def _write_metadata_to_cbz(path: Path, fields: dict, cover_bytes: Optional[bytes
         tmp = path.with_suffix(".tmp.cbz")
         try:
             with zipfile.ZipFile(path) as src, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as dst:
+                existing_names = {i.filename for i in src.infolist()}
                 for item in src.infolist():
+                    # ZIP slip guard: skip entries with path traversal sequences
+                    if ".." in item.filename or item.filename.startswith("/"):
+                        continue
                     if item.filename.lower() == "comicinfo.xml":
                         dst.writestr(ci_filename, new_xml)
                     elif cover_bytes and item.filename == cover_name:
                         dst.writestr(cover_name, cover_bytes)
                     else:
                         dst.writestr(item, src.read(item.filename))
-                if ci_filename not in [i.filename for i in src.infolist()]:
+                if ci_filename not in existing_names:
                     dst.writestr(ci_filename, new_xml)
                 if cover_bytes and not existing_cover_name:
                     dst.writestr(cover_name, cover_bytes)
@@ -585,6 +625,9 @@ def _write_metadata_to_file(path: Path, fmt: str, fields: dict, cover_bytes: Opt
 
 # ── Upload ────────────────────────────────────────────────────────────────────
 
+MAX_UPLOAD_BYTES = 500 * 1024 * 1024  # 500 MB per file
+
+
 @router.post("/upload")
 async def upload_books(
     files: list[UploadFile] = File(...),
@@ -592,7 +635,10 @@ async def upload_books(
 ):
     results = []
     for upload in files:
-        data = await upload.read()
+        data = await upload.read(MAX_UPLOAD_BYTES + 1)
+        if len(data) > MAX_UPLOAD_BYTES:
+            results.append({"filename": upload.filename, "error": "File too large (max 500 MB)"})
+            continue
         fmt = _detect_format(data[:2048], upload.filename or "")
         if not fmt:
             results.append({"filename": upload.filename, "error": "Unsupported format"})
