@@ -1,4 +1,4 @@
-# OPD Server
+# OPDS Server
 
 An OPDS 1.2 catalog server for serving ebooks to KOReader on jailbroken Kindles. Includes a web management UI for uploading books, editing metadata, and organizing with tags, authors, and series.
 
