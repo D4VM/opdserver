@@ -29,13 +29,17 @@ cd opdserver
 
 # 2. Pre-create the data directory and settings file
 #    (Docker will create settings.json as a directory if it doesn't exist first)
-mkdir -p data && touch data/settings.json && touch data/library.db
+mkdir -p data && touch data/settings.json
 
-# 3. Set your LAN IP in docker-compose.yml (BASE_URL line), then:
+# 3. Set your base URL in TWO places:
+#    - docker-compose.yml (BASE_URL line)
+#    - server.ini (base_url line)
+#
+#    Make sure both values are the same.
+#
+# 4. Start the container
 docker compose up --build
-```
-
-Open `http://localhost:8000` in your browser. Your library data is stored in `./data/` and survives container restarts.
+Open `http://IP:8000` (or port you specified in docker-compose.yml in your browser. Your library data is stored in `./data/` and survives container restarts.
 
 After code changes, rebuild with:
 ```bash
