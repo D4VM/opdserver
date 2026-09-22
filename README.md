@@ -37,7 +37,7 @@ Open `http://localhost:8000` in your browser. Your library data is stored in `./
 
 After code changes, rebuild with:
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
 ### Without Docker
