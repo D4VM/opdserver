@@ -27,7 +27,7 @@ cd opdserver
 
 # 2. Pre-create the data directory and settings file
 #    (Docker will create settings.json as a directory if it doesn't exist first)
-mkdir -p data && touch data/settings.json
+mkdir -p data && touch data/settings.json && touch data/library.db
 
 # 3. Set your LAN IP in docker-compose.yml (BASE_URL line), then:
 docker compose up --build
