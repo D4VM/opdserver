@@ -10,7 +10,8 @@ fi
 
 # library.db
 if [ -d /app/library.db ]; then
-    echo "ERROR: library.db is a directory. On host: rm -rf data/library.db && touch data/library.db"
+    echo "ERROR: library.db is a directory."
+    rm -rf data/library.db && touch data/library.db
     exit 1
 fi
 if [ ! -f /app/library.db ]; then
