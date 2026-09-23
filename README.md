@@ -31,7 +31,7 @@ cd opdserver
 #    (Docker will create settings.json as a directory if it doesn't exist first)
 mkdir -p data && touch data/settings.json && touch data/library.db
 
-# 3. Set your base URL in TWO places:
+# 3. Set your base IP in TWO places:
 #    - docker-compose.yml (BASE_URL line)
 #    - server.ini (base_url line)
 #
